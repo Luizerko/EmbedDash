@@ -81,19 +81,54 @@ print("Total processing time: {:.2f} seconds".format(time.time() - start_time))
 fig = px.scatter(
     df, x='x', y='y', color='label',
     title="TRIMAP embeddings on MNIST",
-    labels={'color': 'Digit'},
-    hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'}
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'},
+    width=1000, height=800
 )
 
 # Define the layout
 app.layout = html.Div([
     dcc.Graph(
         id='scatter-plot',
-        figure=fig
+        figure=fig,
+        style={"padding": "10px"}
     ),
-    html.Img(id='hover-image', style={'height': '200px'}),
-    html.Div(id='hover-index')
-])
+    html.Div([
+        html.Img(id='hover-image', style={'height': '200px'}),
+        html.Div(id='hover-index'),
+    ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+], style={"display": "flex", "flexDirection": "column", "alignItems": "center"})
+
+fig.update_layout(
+    title={
+        'text': "TRIMAP embeddings on MNIST",
+        'y': 0.95,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top',
+        'font': {
+            'size': 32,
+            'color': 'black',
+            'family': 'Arial Black'
+        }
+    },
+    margin=dict(l=20, r=20, t=100, b=20),
+    paper_bgcolor="AliceBlue",
+    xaxis=dict(showgrid=False, zeroline=False, visible=False),
+    yaxis=dict(showgrid=False, zeroline=False, visible=False),
+    legend=dict(
+        title="Label",
+        traceorder="normal",
+        font=dict(
+            family="Arial",
+            size=12,
+            color="black"
+        ),
+        bgcolor="AliceBlue",
+        bordercolor="Black",
+        borderwidth=2
+    )
+)
 
 # Define the callback to update the image
 @app.callback(
@@ -108,7 +143,7 @@ def display_image(hoverData):
         return '', ''
     original_label = hoverData['points'][0]['customdata'][0]
     original_image = hoverData['points'][0]['customdata'][1]
-    return original_image, f'Original label: {original_label}'
+    return original_image, f'Original Label: {original_label}'
 
 if __name__ == '__main__':
     app.run_server(debug=True)
