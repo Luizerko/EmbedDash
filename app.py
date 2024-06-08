@@ -1,38 +1,28 @@
-import os
-import pandas as pd
-import numpy as np
-from dash import Dash, html, dcc, Input, Output, State
-import plotly.express as px
-import trimap
-from keras.datasets import mnist
+import time
 import base64
 import io
+import trimap
+import numpy as np
+import pandas as pd
+import plotly.express as px
 import matplotlib.pyplot as plt
-from joblib import Parallel, delayed
-import time
+
+from pathlib import Path
 from sklearn.metrics.pairwise import pairwise_distances
+from keras.datasets import mnist
 from scipy.optimize import minimize
+from dash import Dash, html, dcc, Input, Output, State
+
+
+# Paths to cache files
+#dataframe_path = 'mnist_trimap_dataframe.pkl'
+data_path = Path("data/")
+dataframe_path = data_path / "test.pkl"
+start_time = time.time()
+
 
 app = Dash(__name__)
 
-def load_mnist(percentage=100):
-    """
-    outputs the mnist needed to train trimap
-    used percentage for debugging and not needing to reload the entire time
-    """
-    (train_examples, train_labels), (test_examples, test_labels) = mnist.load_data()
-    
-    # Calculate the number of samples to load
-    train_samples = int(len(train_examples) * percentage / 100)
-    test_samples = int(len(test_examples) * percentage / 100)
-    
-    # Slice the arrays to get the specified percentage of data
-    train_examples = train_examples[:train_samples].astype(np.float32)
-    train_labels = train_labels[:train_samples]
-    test_examples = test_examples[:test_samples].astype(np.float32)
-    test_labels = test_labels[:test_samples]
-    
-    return train_examples, train_labels, test_examples, test_labels
 
 def convert_image_to_base64(img):
     buf = io.BytesIO()
@@ -85,13 +75,9 @@ def compute_translations(initial_positions, final_positions):
 
     return translations
 
-# Paths to cache files
-#dataframe_path = 'mnist_trimap_dataframe.pkl'
-dataframe_path = 'test.pkl'
-start_time = time.time()
 
 # Check if the DataFrame cache exists
-if os.path.exists(dataframe_path):
+if dataframe_path.exists():
     # Load the DataFrame from the file
     df = pd.read_pickle(dataframe_path)
 else:
@@ -138,9 +124,6 @@ else:
 
     # Save the DataFrame to a file for future use
     df.to_pickle(dataframe_path)
-    df.to_csv('temp.csv')
-
-print("Total processing time: {:.2f} seconds".format(time.time() - start_time))
 
 # Create Plotly figure with customized hover data
 fig = px.scatter(
@@ -266,7 +249,6 @@ def update_plot(n_clicks, current_fig):
             )
         )
         return updated_fig
-    
     return current_fig
 
 if __name__ == '__main__':
