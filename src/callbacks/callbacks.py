@@ -90,9 +90,10 @@ def find_clicked_points(clickData, n_intervals, n_clicks):
 
 @callback(
     Output('image-find-between-button', 'n_clicks'),
-    Input('image-find-between-button', 'n_clicks')
+    Input('image-find-between-button', 'n_clicks'),
+    State('scatter-plot', 'figure')
 )
-def find_images_between_clicks(n_clicks):
+def find_images_between_clicks(n_clicks, fig):
     if not n_clicks:
         return None
 
@@ -111,8 +112,6 @@ def find_images_between_clicks(n_clicks):
     min_y = np.min(ys)
     max_y = np.max(ys)
 
-
-    global fig
     labels = []
     imgs = []
     x_coords = []
@@ -140,64 +139,3 @@ def find_images_between_clicks(n_clicks):
     CLICKED_POINTS = closest_points_to_line(sorted_coords, sorted_imgs, sorted_labes, 1)
     CLICKED_POINTS_INDEX = 0
     return None
-
-
-# Callback for the latent space distances function
-@callback(
-    [Output('scatter-plot', 'figure'),
-     Output('translate-button', 'n_clicks')],
-    [Input('translate-button', 'n_clicks')],
-    [State('scatter-plot', 'figure')]
-)
-def update_plot(n_clicks, current_fig):
-
-    # instead of this n_clicks%2 stuff, you can return n_clicks, allowing you to reset it to 0
-    # tip from Joost
-    if n_clicks > 0:
-
-        if n_clicks%2 != 0:
-            for i in np.unique(df['label']):
-                df.loc[df['label'] == i, ['x', 'y']] += translations[i]
-        else:
-            for i in np.unique(df['label']):
-                df.loc[df['label'] == i, ['x', 'y']] -= translations[i]
-
-        updated_fig = px.scatter(
-            df, x='x', y='y', color='label',
-            title="TRIMAP embeddings on MNIST",
-            labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': True, 'x': False, 'y': False, 'image': False},
-            width=1000, height=800
-        )
-        updated_fig.update_layout(
-            title={
-                'text': "TRIMAP embeddings on MNIST",
-                'y': 0.95,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top',
-                'font': {
-                    'size': 32,
-                    'color': 'black',
-                    'family': 'Arial Black'
-                }
-            },
-            margin=dict(l=20, r=20, t=100, b=20),
-            paper_bgcolor="AliceBlue",
-            xaxis=dict(showgrid=False, zeroline=False, visible=False),
-            yaxis=dict(showgrid=False, zeroline=False, visible=False),
-            legend=dict(
-                title="Label",
-                traceorder="normal",
-                font=dict(
-                    family="Arial",
-                    size=12,
-                    color="black"
-                ),
-                bgcolor="AliceBlue",
-                bordercolor="Black",
-                borderwidth=2
-            )
-        )
-        return updated_fig, n_clicks
-    return current_fig, n_clicks

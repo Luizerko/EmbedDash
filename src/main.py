@@ -7,8 +7,10 @@ import plotly.express as px
 
 from pathlib import Path
 from scipy.optimize import minimize
-from dash import Dash, html, dcc
+from dash import Dash, html, dcc, Input, Output, State, callback
 
+from logger import logger
+from models import train_and_predict, models
 from utils import (
     load_mnist,
     convert_images_to_base64,
@@ -36,12 +38,11 @@ app = Dash(__name__)
 ### MAIN ###
 
 
-# Check if the DataFrame cache exists
 if dataframe_path.exists():
     # Load the DataFrame from the file
     df = pd.read_pickle(dataframe_path)
 else:
-    # Load MNIST dataset (e.g., 10% of the data)positions
+    logger.info("Downloading MNIST data...")
     train_examples, train_labels, test_examples, test_labels = load_mnist()
     examples = np.concatenate((train_examples, test_examples), 0)
     base64_images = convert_images_to_base64(examples)
@@ -72,8 +73,11 @@ else:
     df['y'] = (df['y'] - df['y'].min())/(df['y'].max() - df['y'].min())
     trimap_centroids = compute_centroids(np.array(df[['x', 'y']]), np.array(df['label']))
 
-    # import ipdb
-    # ipdb.set_trace()
+    # Train models and predict labels
+    for model_name, model in models.items():
+        logger.info(f"Training {model_name}...")
+        model_predictions = train_and_predict(models[model_name], emb_mnist_trimap, labels, emb_mnist_trimap)
+        df[model_name] = model_predictions
 
     optimal_positions = minimize(objective_function,
                                  np.array([*trimap_centroids.values()]).reshape(20),
@@ -88,6 +92,7 @@ else:
     # Save the DataFrame to a file for future use
     df.to_pickle(dataframe_path)
 
+
 # Create Plotly figure with customized hover data
 fig = px.scatter(
     df, x='x', y='y', color='label',
@@ -97,6 +102,7 @@ fig = px.scatter(
     width=1000, height=800
 )
 
+
 # Define the layout
 app.layout = html.Div([
     dcc.Graph(
@@ -104,6 +110,9 @@ app.layout = html.Div([
         figure=fig,
         style={"padding": "10px"}
     ),
+    dcc.RadioItems(options=["label", *models.keys()], 
+                   value='label',
+                   id='controls-and-radio-item'),
     html.Div([
         html.Div([
             html.Img(id='hover-image', style={'height': '200px'}),
@@ -156,6 +165,114 @@ fig.update_layout(
         borderwidth=2
     )
 )
+
+
+@callback(
+    Output('scatter-plot', 'figure', allow_duplicate=True),
+    Input(component_id='controls-and-radio-item', component_property='value'),
+    State('scatter-plot', 'figure'),
+    prevent_initial_call=True
+)
+def update_plot_labels(model_chosen, current_fig):
+    updated_fig = px.scatter(
+        df, x='x', y='y', color=model_chosen,
+        title="TRIMAP embeddings on MNIST",
+        labels={'color': 'Digit', 'label': 'Label'},
+        hover_data={'label': True, 'x': False, 'y': False, 'image': False},
+        width=1000, height=800
+    )
+    updated_fig.update_layout(
+                title={
+                    'text': "TRIMAP embeddings on MNIST",
+                    'y': 0.95,
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top',
+                    'font': {
+                        'size': 32,
+                        'color': 'black',
+                        'family': 'Arial Black'
+                    }
+                },
+                margin=dict(l=20, r=20, t=100, b=20),
+                paper_bgcolor="AliceBlue",
+                xaxis=dict(showgrid=False, zeroline=False, visible=False),
+                yaxis=dict(showgrid=False, zeroline=False, visible=False),
+                legend=dict(
+                    title="Label",
+                    traceorder="normal",
+                    font=dict(
+                        family="Arial",
+                        size=12,
+                        color="black"
+                    ),
+                    bgcolor="AliceBlue",
+                    bordercolor="Black",
+                    borderwidth=2
+                )
+            )
+    return updated_fig
+
+
+# Callback for the latent space distances function
+@callback(
+    [Output('scatter-plot', 'figure'),
+     Output('translate-button', 'n_clicks')],
+    [Input('translate-button', 'n_clicks')],
+    [State('scatter-plot', 'figure')]
+)
+def update_plot(n_clicks, current_fig):
+    # instead of this n_clicks%2 stuff, you can return n_clicks, allowing you to reset it to 0
+    # tip from Joost
+    if n_clicks > 0:
+
+        if n_clicks%2 != 0:
+            for i in np.unique(df['label']):
+                df.loc[df['label'] == i, ['x', 'y']] += translations[i]
+        else:
+            for i in np.unique(df['label']):
+                df.loc[df['label'] == i, ['x', 'y']] -= translations[i]
+
+        updated_fig = px.scatter(
+            df, x='x', y='y', color='label',
+            title="TRIMAP embeddings on MNIST",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': True, 'x': False, 'y': False, 'image': False},
+            width=1000, height=800
+        )
+        updated_fig.update_layout(
+            title={
+                'text': "TRIMAP embeddings on MNIST",
+                'y': 0.95,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': {
+                    'size': 32,
+                    'color': 'black',
+                    'family': 'Arial Black'
+                }
+            },
+            margin=dict(l=20, r=20, t=100, b=20),
+            paper_bgcolor="AliceBlue",
+            xaxis=dict(showgrid=False, zeroline=False, visible=False),
+            yaxis=dict(showgrid=False, zeroline=False, visible=False),
+            legend=dict(
+                title="Label",
+                traceorder="normal",
+                font=dict(
+                    family="Arial",
+                    size=12,
+                    color="black"
+                ),
+                bgcolor="AliceBlue",
+                bordercolor="Black",
+                borderwidth=2
+            )
+        )
+        return updated_fig, n_clicks
+    return current_fig, n_clicks
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
