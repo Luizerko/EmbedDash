@@ -51,7 +51,7 @@ else:
     # Getting the latent centroids and their distances
     # In this case, since we don't have a model yet, the latent space is the data space
     # ADD A MODEL TO MAKE THE SPACE MORE INTERESTING
-    examples = examples.reshape(examples.shape[0], examples.shape[1]*examples.shape[2])
+    examples = examples.reshape(examples.shape[0], -1)
     latent_centroids = compute_centroids(examples, labels)
     desired_distances = compute_pairwise_distances(np.array([*latent_centroids.values()]))
 
@@ -75,10 +75,10 @@ else:
     # import ipdb
     # ipdb.set_trace()
 
-    optimal_positions = minimize(objective_function, 
-                                 np.array([*trimap_centroids.values()]).reshape(20), 
+    optimal_positions = minimize(objective_function,
+                                 np.array([*trimap_centroids.values()]).reshape(20),
                                  method='L-BFGS-B',
-                                 args=(desired_distances,)).x
+                                 args=(desired_distances,))
     translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
     
     # REMOVE AS SOON AS THE CALLBACK IS WORKING
