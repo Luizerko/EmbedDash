@@ -6,20 +6,18 @@ The idea of this project is to develop a variety of interactive methods for visu
 # Environment Installation
 For a very standard and straight forward installation proces, open your terminal and run:
 
-```
-conda create -n mma python=3.10
+```shell
+$ git clone https://github.com/Luizerko/mma_trimap_vis.git
+$ cd mma_trimap_vis
 
-git clone https://github.com/Luizerko/mma_trimap_vis.git
-cd mma_trimap_vis
-
-pip install -r requirements.txt
+$ conda env create --file environment.yml
 ```
 
 # Running App
 To run the app, simply enter the project folder and run:
 
 ```
-python3 app.py
+python app.py
 ```
 
 Then open your browser and navigate to `localhost:8050` to start using the tool.
