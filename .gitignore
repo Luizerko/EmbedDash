@@ -5,6 +5,7 @@ __pycache__/
 
 # data files
 data/
+*.pkl
 
 # C extensions
 *.so
