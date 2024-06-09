@@ -1,5 +1,6 @@
 import trimap
 import numpy as np
+import os
 import pandas as pd
 
 import plotly.express as px
@@ -34,6 +35,11 @@ PREV_CLICKDATA = None
 
 # Paths to cache files
 data_path = Path("data/")
+if not os.path.exists(data_path):
+    os.makedirs(data_path)
+    print(f'Folder "{data_path}" created.')
+else:
+    print(f'Folder "{data_path}" already exists.')
 dataframe_path = data_path / "test.pkl"
 
 
@@ -90,6 +96,11 @@ else:
                                  args=(desired_distances,))
     translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
     
+    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
+    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
+    
+    #df['x_shifted'] = df['x'] + x_translations
+    #df['y_shifted'] = df['y'] + y_translations
     # REMOVE AS SOON AS THE CALLBACK IS WORKING
     # for i in np.unique(labels):
     #     df.loc[df['label'] == i, ['x', 'y']] += translations[i]
@@ -237,13 +248,14 @@ def update_plot(n_clicks, current_fig):
     # instead of this n_clicks%2 stuff, you can return n_clicks, allowing you to reset it to 0
     # tip from Joost
     if n_clicks > 0:
-
+       
         if n_clicks%2 != 0:
-            for i in np.unique(df['label']):
-                df.loc[df['label'] == i, ['x', 'y']] += translations[i]
+            df['x'] = df['x'] + df['x_shift']
+            df['y'] = df['y'] + df['y_shift']
+
         else:
-            for i in np.unique(df['label']):
-                df.loc[df['label'] == i, ['x', 'y']] -= translations[i]
+            df['x'] = df['x'] - df['x_shift']
+            df['y'] = df['y'] - df['y_shift']
 
         updated_fig = px.scatter(
             df, x='x', y='y', color='label',
