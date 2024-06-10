@@ -9,6 +9,7 @@ from scipy.optimize import minimize
 from dash import Dash, html, dcc, Input, Output, State, callback
 
 from logger import logger
+from layouts import fig_layout_dict, small_fig_layout_dict
 from models import train_and_predict, models
 from utils import (
     load_mnist,
@@ -94,35 +95,6 @@ else:
 ########################## FIGURE ##########################
 
 
-fig_layout_dict = {
-        "title": {
-        'text': "TRIMAP embeddings on MNIST",
-        'y': 0.95,
-        'x': 0.5,
-        'xanchor': 'center',
-        'yanchor': 'top',
-        'font': {
-            'size': 32,
-            'color': 'black',
-            'family': 'Arial Black'
-        }
-    },
-    "margin": dict(l=20, r=20, t=100, b=20),
-    "paper_bgcolor": "White",
-    "xaxis": dict(showgrid=False, zeroline=False, visible=False),
-    "yaxis": dict(showgrid=False, zeroline=False, visible=False),
-    "legend": dict(
-        title="Label",
-        traceorder="normal",
-        font=dict(
-            family="Arial",
-            size=12,
-            color="black"
-        ),
-        bgcolor="White",
-    )
-}
-
 
 fig = px.scatter(
     df, x='x', y='y', color='label',
@@ -136,20 +108,54 @@ fig = px.scatter(
 ####################### APP LAYOUT #######################
 
 
+fig_sub1 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
+fig_sub2 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
+
+
+
 app.layout = html.Div([
+    ### Left side of the layout
     html.Div([
         dcc.Graph(
             id='scatter-plot',
             figure=fig,
-            style={"height": "70%"}
+            style={"height": "60%"}
         ),
     ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '90vh'}),
 
-    # Right side of the layout
+
+
+    ### Middle of the layout
+    html.Div([
+        # Box for Plots
+        html.Div([
+            html.H3("Other methods", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '30px', 'margin-bottom': '5px'}),
+            html.Div([
+                html.H4("UMAP", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
+                dcc.Graph(
+                    id='sub-scatter-plot-1',
+                    figure=fig_sub1,
+                    style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                ),
+            ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+
+            html.Div([
+                html.H4("t-SNE", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '30px', 'margin-bottom': '5px'}),
+                dcc.Graph(
+                    id='sub-scatter-plot-2',
+                    figure=fig_sub2,
+                    style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                ),
+            ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '480px', 'minWidth': '230px'}),
+    ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '90vh'}),
+
+
+    ### Right side of the layout
     html.Div([
         # Box for RadioItems
         html.Div([
-            html.H4("Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
+            html.H3("Labels", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '30px', 'margin-bottom': '5px'}),
             dcc.RadioItems(
                 options=["label", *models.keys()],
                 value='label',
@@ -160,7 +166,7 @@ app.layout = html.Div([
 
         # Box for images
         html.Div([
-            html.H4("Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
+            html.H3("Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
             html.Div([
                 html.Img(id='hover-image', style={'height': '200px'}),
                 html.Div(id='hover-index', style={'font-family': 'Arial', 'padding': '10px'}),
@@ -170,13 +176,13 @@ app.layout = html.Div([
                 html.Img(id='click-image', style={'height': '200px'}),
                 html.Div(id='click-index', style={'font-family': 'Arial', 'padding': '10px'})
             ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
-        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '480px', 'gap': '20px'}),
+        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '500px', 'minWidth': '230px'}),
 
         html.Div([
             html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0)
         ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'alignItems': 'center', 'display': 'flex', 'justifyContent': 'center', 'minWidth': '230px'}),
 
-    ], style={'flex': '1', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'margin': '10px', 'margin-top': '0px', 'borderRadius': '15px'}),
+    ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'margin': '10px'}),
 ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
 
 
