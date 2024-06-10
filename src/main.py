@@ -28,7 +28,6 @@ from utils import (
 data_path = Path("data/")
 dataframe_path = data_path / "test.pkl"
 
-
 app = Dash(__name__)
 
 
@@ -90,53 +89,13 @@ else:
     df.to_pickle(dataframe_path)
 
 
-####################### APP LAYOUT #######################
 
 
-# Create Plotly figure with customized hover data
-fig = px.scatter(
-    df, x='x', y='y', color='label',
-    title="TRIMAP embeddings on MNIST",
-    labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'},
-    width=1000, height=800
-)
+########################## FIGURE ##########################
 
 
-# Define the layout
-app.layout = html.Div([
-    dcc.Graph(
-        id='scatter-plot',
-        figure=fig,
-        style={"padding": "10px"}
-    ),
-    dcc.RadioItems(options=["label", *models.keys()], 
-                   value='label',
-                   id='controls-and-radio-item'),
-    html.Div([
-        html.Div([
-            html.Img(id='hover-image', style={'height': '200px'}),
-            html.Div(id='hover-index'),
-        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
-        html.Div([
-            html.Img(id='click-image', style={'height': '200px'}),
-            html.Div(id='click-index')
-            # html.Button('Reset', id='image-reset-button', n_clicks=0),
-            # html.Button('Find between', id='image-find-between-button', n_clicks=0)
-        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
-        dcc.Interval(
-            id='interval-component',
-            interval=500,  # Update every .5 seconds
-            n_intervals=0)
-    ], style={'display': 'flex', 'flexDirection': 'row', 'justifyContent': 'space-around', 'width': '100%'}),
-    html.Div([
-        html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0)
-    ], style={'margin': '20px'})
-], style={"display": "flex", "flexDirection": "column", "alignItems": "center"})
-
-
-fig.update_layout(
-    title={
+fig_layout_dict = {
+        "title": {
         'text': "TRIMAP embeddings on MNIST",
         'y': 0.95,
         'x': 0.5,
@@ -148,11 +107,11 @@ fig.update_layout(
             'family': 'Arial Black'
         }
     },
-    margin=dict(l=20, r=20, t=100, b=20),
-    paper_bgcolor="AliceBlue",
-    xaxis=dict(showgrid=False, zeroline=False, visible=False),
-    yaxis=dict(showgrid=False, zeroline=False, visible=False),
-    legend=dict(
+    "margin": dict(l=20, r=20, t=100, b=20),
+    "paper_bgcolor": "White",
+    "xaxis": dict(showgrid=False, zeroline=False, visible=False),
+    "yaxis": dict(showgrid=False, zeroline=False, visible=False),
+    "legend": dict(
         title="Label",
         traceorder="normal",
         font=dict(
@@ -160,11 +119,66 @@ fig.update_layout(
             size=12,
             color="black"
         ),
-        bgcolor="AliceBlue",
-        bordercolor="Black",
-        borderwidth=2
+        bgcolor="White",
     )
-)
+}
+
+
+fig = px.scatter(
+    df, x='x', y='y', color='label',
+    title="TRIMAP embeddings on MNIST",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'},
+    width=1000, height=800
+).update_layout(fig_layout_dict)
+
+
+####################### APP LAYOUT #######################
+
+
+app.layout = html.Div([
+    html.Div([
+        dcc.Graph(
+            id='scatter-plot',
+            figure=fig,
+            style={"height": "70%"}
+        ),
+    ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '90vh'}),
+
+    # Right side of the layout
+    html.Div([
+        # Box for RadioItems
+        html.Div([
+            html.H4("Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
+            dcc.RadioItems(
+                options=["label", *models.keys()],
+                value='label',
+                id='controls-and-radio-item',
+                labelStyle={'display': 'block', 'font-family': 'Arial'}
+            )
+        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px'}),
+
+        # Box for images
+        html.Div([
+            html.H4("Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
+            html.Div([
+                html.Img(id='hover-image', style={'height': '200px'}),
+                html.Div(id='hover-index', style={'font-family': 'Arial', 'padding': '10px'}),
+            ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+
+            html.Div([
+                html.Img(id='click-image', style={'height': '200px'}),
+                html.Div(id='click-index', style={'font-family': 'Arial', 'padding': '10px'})
+            ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '480px', 'gap': '20px'}),
+
+        html.Div([
+            html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0)
+        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'alignItems': 'center', 'display': 'flex', 'justifyContent': 'center', 'minWidth': '230px'}),
+
+    ], style={'flex': '1', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'margin': '10px', 'margin-top': '0px', 'borderRadius': '15px'}),
+], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
+
 
 
 ####################### CALLBACKS #######################
@@ -184,36 +198,7 @@ def update_plot_labels(model_chosen, current_fig):
         hover_data={'label': True, 'x': False, 'y': False, 'image': False},
         width=1000, height=800
     )
-    updated_fig.update_layout(
-                title={
-                    'text': "TRIMAP embeddings on MNIST",
-                    'y': 0.95,
-                    'x': 0.5,
-                    'xanchor': 'center',
-                    'yanchor': 'top',
-                    'font': {
-                        'size': 32,
-                        'color': 'black',
-                        'family': 'Arial Black'
-                    }
-                },
-                margin=dict(l=20, r=20, t=100, b=20),
-                paper_bgcolor="AliceBlue",
-                xaxis=dict(showgrid=False, zeroline=False, visible=False),
-                yaxis=dict(showgrid=False, zeroline=False, visible=False),
-                legend=dict(
-                    title="Label",
-                    traceorder="normal",
-                    font=dict(
-                        family="Arial",
-                        size=12,
-                        color="black"
-                    ),
-                    bgcolor="AliceBlue",
-                    bordercolor="Black",
-                    borderwidth=2
-                )
-            )
+    updated_fig.update_layout(fig_layout_dict)
     return updated_fig
 
 
@@ -244,42 +229,11 @@ def update_plot(n_clicks, current_fig):
             hover_data={'label': True, 'x': False, 'y': False, 'image': False},
             width=1000, height=800
         )
-        updated_fig.update_layout(
-            title={
-                'text': "TRIMAP embeddings on MNIST",
-                'y': 0.95,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top',
-                'font': {
-                    'size': 32,
-                    'color': 'black',
-                    'family': 'Arial Black'
-                }
-            },
-            margin=dict(l=20, r=20, t=100, b=20),
-            paper_bgcolor="AliceBlue",
-            xaxis=dict(showgrid=False, zeroline=False, visible=False),
-            yaxis=dict(showgrid=False, zeroline=False, visible=False),
-            legend=dict(
-                title="Label",
-                traceorder="normal",
-                font=dict(
-                    family="Arial",
-                    size=12,
-                    color="black"
-                ),
-                bgcolor="AliceBlue",
-                bordercolor="Black",
-                borderwidth=2
-            )
-        )
+        updated_fig.update_layout(fig_layout_dict)
         return updated_fig, n_clicks
     return current_fig, n_clicks
 
 
-
-# Define the callback to update the image
 @callback(
     [Output('hover-image', 'src'),
      Output('hover-index', 'children')],
