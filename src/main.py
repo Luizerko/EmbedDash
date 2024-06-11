@@ -48,56 +48,24 @@ app = Dash(__name__)
 
 ####################### DATA PREPROCESSING #######################
 
+train_examples, train_labels, test_examples, test_labels = load_mnist()
+
+examples = np.concatenate((train_examples, test_examples), 0)
+labels = np.concatenate((train_labels, test_labels))
+examples = examples.reshape(examples.shape[0], -1)
+latent_centroids = compute_centroids(examples, labels)
+desired_distances = compute_pairwise_distances(np.array([*latent_centroids.values()]))
 
 if dataframe_path.exists():
     # Load the DataFrame from the file
     df = pd.read_pickle(dataframe_path)
 
-    # UPDATE THE DATAFRAME 
-    train_examples, train_labels, test_examples, test_labels = load_mnist()
-
-    examples = np.concatenate((train_examples, test_examples), 0)
-    labels = np.concatenate((train_labels, test_labels))
-    examples = examples.reshape(examples.shape[0], -1)
-    latent_centroids = compute_centroids(examples, labels)
-    desired_distances = compute_pairwise_distances(np.array([*latent_centroids.values()]))
-
-    # Getting the embedding centroids and computing the correspondent translation to get move them to the latent space distance
-    df['x'] = (df['x'] - df['x'].min())/(df['x'].max() - df['x'].min())
-    df['y'] = (df['y'] - df['y'].min())/(df['y'].max() - df['y'].min())
-    trimap_centroids = compute_centroids(np.array(df[['x', 'y']]), np.array(df['label']))
-    optimal_positions = minimize(objective_function,
-                                 np.array([*trimap_centroids.values()]).reshape(20),
-                                 method='L-BFGS-B',
-                                 args=(desired_distances,))
-    translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
-    
-    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
-    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
-
-    labels = np.concatenate((train_labels, test_labels))
-    
-    # Train models and predict labels
-    for model_name, model in models.items():
-        logger.info(f"Training {model_name}...")
-        model_predictions = train_and_predict(models[model_name], df[['x', 'y']], labels, df[['x', 'y']])
-        df[model_name] = model_predictions
-
 
 else:
     logger.info("Downloading MNIST data...")
-    train_examples, train_labels, test_examples, test_labels = load_mnist()
-    examples = np.concatenate((train_examples, test_examples), 0)
+    
     base64_images = convert_images_to_base64(examples)
-    labels = np.concatenate((train_labels, test_labels))
     indices = np.arange(len(examples))
-
-    # Getting the latent centroids and their distances
-    # In this case, since we don't have a model yet, the latent space is the data space
-    # ADD A MODEL TO MAKE THE SPACE MORE INTERESTING
-    examples = examples.reshape(examples.shape[0], -1)
-    latent_centroids = compute_centroids(examples, labels)
-    desired_distances = compute_pairwise_distances(np.array([*latent_centroids.values()]))
 
     # Embed MNIST data using TRIMAP
     emb_mnist_trimap = trimap.TRIMAP().fit_transform(examples.reshape((examples.shape[0], -1)))
@@ -111,34 +79,27 @@ else:
         'index': indices
     })
 
-    # Getting the embedding centroids and computing the correspondent translation to get move them to the latent space distance
-    df['x'] = (df['x'] - df['x'].min())/(df['x'].max() - df['x'].min())
-    df['y'] = (df['y'] - df['y'].min())/(df['y'].max() - df['y'].min())
-    trimap_centroids = compute_centroids(np.array(df[['x', 'y']]), np.array(df['label']))
-
-    # Train models and predict labels
-    for model_name, model in models.items():
-        logger.info(f"Training {model_name}...")
-        model_predictions = train_and_predict(models[model_name], emb_mnist_trimap, labels, emb_mnist_trimap)
-        df[model_name] = model_predictions
-
-    optimal_positions = minimize(objective_function,
-                                 np.array([*trimap_centroids.values()]).reshape(20),
-                                 method='L-BFGS-B',
-                                 args=(desired_distances,))
-    translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
-    
-    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
-    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
-    
-    #df['x_shifted'] = df['x'] + x_translations
-    #df['y_shifted'] = df['y'] + y_translations
-    # REMOVE AS SOON AS THE CALLBACK IS WORKING
-    # for i in np.unique(labels):
-    #     df.loc[df['label'] == i, ['x', 'y']] += translations[i]
-
-    # Save the DataFrame to a file for future use
     df.to_pickle(dataframe_path)
+
+# Getting the embedding centroids and computing the correspondent translation to get move them to the latent space distance
+df['x'] = (df['x'] - df['x'].min())/(df['x'].max() - df['x'].min())
+df['y'] = (df['y'] - df['y'].min())/(df['y'].max() - df['y'].min())
+trimap_centroids = compute_centroids(np.array(df[['x', 'y']]), np.array(df['label']))
+
+# Train models and predict labels
+for model_name, model in models.items():
+    logger.info(f"Training {model_name}...")
+    model_predictions = train_and_predict(models[model_name], emb_mnist_trimap, labels, emb_mnist_trimap)
+    df[model_name] = model_predictions
+
+optimal_positions = minimize(objective_function,
+                                np.array([*trimap_centroids.values()]).reshape(20),
+                                method='L-BFGS-B',
+                                args=(desired_distances,))
+translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
+    
+df['x_shift'] = df['label'].map(lambda label: translations[label][0])
+df['y_shift'] = df['label'].map(lambda label: translations[label][1])
 
 
 ####################### APP LAYOUT #######################
