@@ -16,6 +16,11 @@ fig_layout_dict = {
     "xaxis": dict(showgrid=False, zeroline=False, visible=False),
     "yaxis": dict(showgrid=False, zeroline=False, visible=False),
     "legend": dict(
+        orientation='h',
+        x=0.5,
+        y=-0.05,
+        xanchor='center',
+        yanchor='top',
         title="Label",
         traceorder="normal",
         font=dict(
