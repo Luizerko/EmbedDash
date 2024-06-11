@@ -5,6 +5,9 @@ import pandas as pd
 
 import plotly.express as px
 
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+
 from pathlib import Path
 from scipy.optimize import minimize
 from dash import Dash, html, dcc, Input, Output, State, callback
@@ -35,7 +38,6 @@ app = Dash(__name__)
 
 ####################### DATA PREPROCESSING #######################
 
-
 if dataframe_path.exists():
     # Load the DataFrame from the file
     df = pd.read_pickle(dataframe_path)
@@ -58,12 +60,32 @@ else:
     emb_mnist_trimap = trimap.TRIMAP().fit_transform(examples.reshape((examples.shape[0], -1)))
     emb_mnist_umap = umap.UMAP().fit_transform(examples.reshape((examples.shape[0], -1)))
 
+    # models that might need dimensionality reduction
+    large_data = False
+    logger.info("examples:", len(examples))
+    if len(examples) > 5000: # 5000 is an arbitrary choice
+        large_data = True
+
+    if large_data:
+        logger.info("in PCA")
+        pca = PCA(n_components=50)  # Reduce to 50 dimensions (arbitrary choice)
+        examples = pca.fit_transform(examples)
+
+    logger.info("in TSNE")
+    emb_mnist_tsne = TSNE(
+        n_components=2, # number of dimensions
+        perplexity=30,  # balance between local and global aspect, 30 is what they used on MNIST
+        n_iter=1000).fit_transform(examples.reshape((examples.shape[0], -1)))
+
+
     # Create a DataFrame for Plotly
     df = pd.DataFrame({
         'x': emb_mnist_trimap[:, 0],
         'y': emb_mnist_trimap[:, 1],
         'x_umap': emb_mnist_umap[:, 0],
         'y_umap': emb_mnist_umap[:, 1],
+        'x_tsne': emb_mnist_tsne[:, 0],
+        'y_tsne': emb_mnist_tsne[:, 1],
         'label': labels,
         'image': base64_images,
         'index': indices
@@ -116,12 +138,20 @@ umap_fig = px.scatter(
     width=400, height=320
 ).update_layout(small_fig_layout_dict)
 
+tsne_fig = px.scatter(
+    df, x='x_tsne', y='y_tsne', color='label',
+    title="T-SNE embeddings on MNIST",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': True, 'x_tsne': False, 'y_tsne': False, 'image': 'image'},
+    width=400, height=320
+).update_layout(small_fig_layout_dict)
+
 
 ####################### APP LAYOUT #######################
 
 
 # fig_sub1 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
-fig_sub2 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
+# fig_sub2 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
 
 
 
@@ -155,7 +185,7 @@ app.layout = html.Div([
                 html.H4("t-SNE", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '30px', 'margin-bottom': '5px'}),
                 dcc.Graph(
                     id='sub-scatter-plot-2',
-                    figure=fig_sub2,
+                    figure=tsne_fig,
                     style={"width": "100%", "display": "inline-block", 'height': '300px'}
                 ),
             ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
