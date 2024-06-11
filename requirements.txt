@@ -8,3 +8,4 @@ scikit-learn
 scipy
 tensorflow
 keras
+umap-learn

@@ -1,4 +1,5 @@
 import trimap
+import umap
 import numpy as np
 import pandas as pd
 
@@ -53,13 +54,16 @@ else:
     latent_centroids = compute_centroids(examples, labels)
     desired_distances = compute_pairwise_distances(np.array([*latent_centroids.values()]))
 
-    # Embed MNIST data using TRIMAP
+    # Embed MNIST data for models
     emb_mnist_trimap = trimap.TRIMAP().fit_transform(examples.reshape((examples.shape[0], -1)))
+    emb_mnist_umap = umap.UMAP().fit_transform(examples.reshape((examples.shape[0], -1)))
 
     # Create a DataFrame for Plotly
     df = pd.DataFrame({
         'x': emb_mnist_trimap[:, 0],
         'y': emb_mnist_trimap[:, 1],
+        'x_umap': emb_mnist_umap[:, 0],
+        'y_umap': emb_mnist_umap[:, 1],
         'label': labels,
         'image': base64_images,
         'index': indices
@@ -92,7 +96,7 @@ else:
 
 
 
-########################## FIGURE ##########################
+########################## FIGURES ##########################
 
 
 
@@ -101,14 +105,22 @@ fig = px.scatter(
     title="TRIMAP embeddings on MNIST",
     labels={'color': 'Digit', 'label': 'Label'},
     hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'},
-    width=1000, height=800
+    width=800, height=640
 ).update_layout(fig_layout_dict)
+
+umap_fig = px.scatter(
+    df, x='x_umap', y='y_umap', color='label',
+    title="UMAP embeddings on MNIST",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': True, 'x_umap': False, 'y_umap': False, 'image': 'image'},
+    width=400, height=320
+).update_layout(small_fig_layout_dict)
 
 
 ####################### APP LAYOUT #######################
 
 
-fig_sub1 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
+# fig_sub1 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
 fig_sub2 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
 
 
@@ -134,7 +146,7 @@ app.layout = html.Div([
                 html.H4("UMAP", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
                 dcc.Graph(
                     id='sub-scatter-plot-1',
-                    figure=fig_sub1,
+                    figure=umap_fig,
                     style={"width": "100%", "display": "inline-block", 'height': '300px'}
                 ),
             ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
