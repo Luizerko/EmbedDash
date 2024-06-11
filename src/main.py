@@ -121,7 +121,6 @@ else:
 ########################## FIGURES ##########################
 
 
-
 fig = px.scatter(
     df, x='x', y='y', color='label',
     title="TRIMAP embeddings on MNIST",
@@ -175,7 +174,7 @@ app.layout = html.Div([
             html.Div([
                 html.H4("UMAP", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
                 dcc.Graph(
-                    id='sub-scatter-plot-1',
+                    id='UMAP-plot',
                     figure=umap_fig,
                     style={"width": "100%", "display": "inline-block", 'height': '300px'}
                 ),
@@ -184,7 +183,7 @@ app.layout = html.Div([
             html.Div([
                 html.H4("t-SNE", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '30px', 'margin-bottom': '5px'}),
                 dcc.Graph(
-                    id='sub-scatter-plot-2',
+                    id='T-SNE-plot',
                     figure=tsne_fig,
                     style={"width": "100%", "display": "inline-block", 'height': '300px'}
                 ),
@@ -284,31 +283,57 @@ def update_plot(n_clicks, current_fig):
 
 @callback(
     [Output('hover-image', 'src'),
-     Output('hover-index', 'children')],
-    [Input('scatter-plot', 'hoverData')]
+     Output('hover-index', 'children'),
+     Output('scatter-plot', 'hoverData'),
+     Output('UMAP-plot', 'hoverData'),
+     Output('T-SNE-plot', 'hoverData')],
+    [Input('scatter-plot', 'hoverData'),
+     Input('UMAP-plot', 'hoverData'),
+     Input('T-SNE-plot', 'hoverData')]
 )
-def display_hover_image(hoverData):
+def display_hover_image(MainhoverData, UMAPhoverData, TSNEhoverData):
+    
+    # if you are hovering over any of the input images, get that hoverData
+    hoverData = None
+    inputs = [MainhoverData, UMAPhoverData, TSNEhoverData]
+    for inp in inputs:
+        if inp is not None:
+            hoverData = inp
+            break
+    
     if hoverData is None:
-        return '', ''
+        return '', '', None, None, None
+
     original_label = hoverData['points'][0]['customdata'][0]
     original_image = hoverData['points'][0]['customdata'][1]
-    return original_image, f'Original Label: {original_label}'
+
+    return original_image, f'Original Label: {original_label}', None, None, None
 
 
 @callback(
     [Output('click-image', 'src'),
-     Output('click-index', 'children')],
-    [Input('scatter-plot', 'clickData')]
+     Output('click-index', 'children'),
+     Output('scatter-plot', 'clickData'),
+     Output('UMAP-plot', 'clickData'),
+     Output('T-SNE-plot', 'clickData')],
+    [Input('scatter-plot', 'clickData'),
+     Input('UMAP-plot', 'clickData'),
+     Input('T-SNE-plot', 'clickData')]
 )
-def display_click_image(clickData):
+def display_click_image(MainclickData, UMAPclickData, TSNEclickData):
+    clickData = None
+    inputs = [MainclickData, UMAPclickData, TSNEclickData]
+    for inp in inputs:
+        if inp is not None:
+            clickData = inp
+            break
+
     if clickData is not None:
         original_label = clickData['points'][0]['customdata'][0]
         original_image = clickData['points'][0]['customdata'][1]
-        x_coord = clickData['points'][0]['x']
-        y_coord = clickData['points'][0]['y']
 
-        return original_image, f'Original Label: {original_label}'
-    return '', ''
+        return original_image, f'Original Label: {original_label}', None, None, None
+    return '', '', None, None, None
 
 
 if __name__ == '__main__':
