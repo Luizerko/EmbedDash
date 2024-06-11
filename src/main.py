@@ -52,6 +52,38 @@ app = Dash(__name__)
 if dataframe_path.exists():
     # Load the DataFrame from the file
     df = pd.read_pickle(dataframe_path)
+
+    # UPDATE THE DATAFRAME 
+    train_examples, train_labels, test_examples, test_labels = load_mnist()
+
+    examples = np.concatenate((train_examples, test_examples), 0)
+    labels = np.concatenate((train_labels, test_labels))
+    examples = examples.reshape(examples.shape[0], -1)
+    latent_centroids = compute_centroids(examples, labels)
+    desired_distances = compute_pairwise_distances(np.array([*latent_centroids.values()]))
+
+    # Getting the embedding centroids and computing the correspondent translation to get move them to the latent space distance
+    df['x'] = (df['x'] - df['x'].min())/(df['x'].max() - df['x'].min())
+    df['y'] = (df['y'] - df['y'].min())/(df['y'].max() - df['y'].min())
+    trimap_centroids = compute_centroids(np.array(df[['x', 'y']]), np.array(df['label']))
+    optimal_positions = minimize(objective_function,
+                                 np.array([*trimap_centroids.values()]).reshape(20),
+                                 method='L-BFGS-B',
+                                 args=(desired_distances,))
+    translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
+    
+    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
+    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
+
+    labels = np.concatenate((train_labels, test_labels))
+    
+    # Train models and predict labels
+    for model_name, model in models.items():
+        logger.info(f"Training {model_name}...")
+        model_predictions = train_and_predict(models[model_name], df[['x', 'y']], labels, df[['x', 'y']])
+        df[model_name] = model_predictions
+
+
 else:
     logger.info("Downloading MNIST data...")
     train_examples, train_labels, test_examples, test_labels = load_mnist()
@@ -120,7 +152,6 @@ fig = px.scatter(
     hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'},
     width=1000, height=800
 )
-
 
 # Define the layout
 app.layout = html.Div([
