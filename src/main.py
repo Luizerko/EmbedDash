@@ -2,6 +2,7 @@ import trimap
 import umap
 import numpy as np
 import pandas as pd
+import os
 
 import plotly.express as px
 
@@ -17,6 +18,7 @@ from layouts import fig_layout_dict, small_fig_layout_dict
 from models import train_and_predict, models
 from utils import (
     load_mnist,
+    load_mammoth,
     convert_images_to_base64,
     compute_centroids,
     compute_pairwise_distances,
@@ -31,6 +33,9 @@ from utils import (
 
 # Paths to cache files
 data_path = Path("data/")
+if not os.path.exists(data_path):
+    os.makedirs(data_path)
+    print(f'Folder "{data_path}" created.')
 dataframe_path = data_path / "test.pkl"
 
 app = Dash(__name__)
@@ -62,7 +67,7 @@ else:
 
     # models that might need dimensionality reduction
     large_data = False
-    logger.info("examples:", len(examples))
+    #logger.info("examples:", len(examples))
     if len(examples) > 5000: # 5000 is an arbitrary choice
         large_data = True
 
@@ -108,15 +113,13 @@ else:
                                  args=(desired_distances,))
     translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
     
-    # REMOVE AS SOON AS THE CALLBACK IS WORKING
-    # for i in np.unique(labels):
-    #     df.loc[df['label'] == i, ['x', 'y']] += translations[i]
+    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
+    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
 
     # Save the DataFrame to a file for future use
     df.to_pickle(dataframe_path)
 
-
-
+df_mammoth = load_mammoth()
 
 ########################## FIGURES ##########################
 
@@ -220,7 +223,8 @@ app.layout = html.Div([
         ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '500px', 'minWidth': '230px'}),
 
         html.Div([
-            html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0)
+            html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0),
+            html.Button('Change Data Distribution', id='change-distribution', n_clicks=0)
         ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'alignItems': 'center', 'display': 'flex', 'justifyContent': 'center', 'minWidth': '230px'}),
 
     ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'margin': '10px'}),
@@ -263,11 +267,11 @@ def update_plot(n_clicks, current_fig):
     if n_clicks > 0:
 
         if n_clicks%2 != 0:
-            for i in np.unique(df['label']):
-                df.loc[df['label'] == i, ['x', 'y']] += translations[i]
+            df['x'] = df['x'] + df['x_shift']
+            df['y'] = df['y'] + df['y_shift']
         else:
-            for i in np.unique(df['label']):
-                df.loc[df['label'] == i, ['x', 'y']] -= translations[i]
+            df['x'] = df['x'] - df['x_shift']
+            df['y'] = df['y'] - df['y_shift']
 
         updated_fig = px.scatter(
             df, x='x', y='y', color='label',
@@ -279,6 +283,94 @@ def update_plot(n_clicks, current_fig):
         updated_fig.update_layout(fig_layout_dict)
         return updated_fig, n_clicks
     return current_fig, n_clicks
+
+
+# Callback for plotting the mammoth distribution
+@app.callback(
+    [Output('scatter-plot', 'figure', allow_duplicate=True)],
+    [Input('change-distribution', 'n_clicks')],
+    prevent_initial_call=True
+)
+def switch_to_3d_plot(n_clicks):
+    if n_clicks % 2 != 0:
+        fig_3d = px.scatter_3d(
+            df_mammoth, x='x', y='y', z='z',
+            title="3D Scatter Plot of Mammoth Data",
+            width=1000, height=800
+        )
+        fig_3d.update_layout(
+            title={
+                'text': "3D Scatter Plot of Mammoth Data",
+                'y': 0.95,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': {
+                    'size': 32,
+                    'color': 'black',
+                    'family': 'Arial Black'
+                }
+            },
+            margin=dict(l=20, r=20, t=100, b=20),
+            paper_bgcolor="AliceBlue",
+            scene=dict(
+                xaxis=dict(showgrid=False, zeroline=False, visible=False),
+                yaxis=dict(showgrid=False, zeroline=False, visible=False),
+                zaxis=dict(showgrid=False, zeroline=False, visible=False)
+            )
+            # legend=dict(
+            #     title="Label",
+            #     traceorder="normal",
+            #     font=dict(
+            #         family="Arial",
+            #         size=12,
+            #         color="black"
+            #     ),
+            #     bgcolor="AliceBlue",
+            #     bordercolor="Black",
+            #     borderwidth=2
+            # )
+        )
+        return fig_3d
+    else:
+        fig_2d = px.scatter(
+            df, x='x', y='y', color='label',
+            title="TRIMAP embeddings on MNIST",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'},
+            width=1000, height=800
+        )
+        fig_2d.update_layout(
+            title={
+                'text': "TRIMAP embeddings on MNIST",
+                'y': 0.95,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': {
+                    'size': 32,
+                    'color': 'black',
+                    'family': 'Arial Black'
+                }
+            },
+            margin=dict(l=20, r=20, t=100, b=20),
+            paper_bgcolor="AliceBlue",
+            xaxis=dict(showgrid=False, zeroline=False, visible=False),
+            yaxis=dict(showgrid=False, zeroline=False, visible=False),
+            legend=dict(
+                title="Label",
+                traceorder="normal",
+                font=dict(
+                    family="Arial",
+                    size=12,
+                    color="black"
+                ),
+                bgcolor="AliceBlue",
+                bordercolor="Black",
+                borderwidth=2
+            )
+        )
+        return fig_2d
 
 
 @callback(
