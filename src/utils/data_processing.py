@@ -32,7 +32,7 @@ def load_mammoth():
 
 def convert_image_to_base64(img):
     buf = io.BytesIO()
-    plt.imsave(buf, img.reshape((img.shape[0]**2, 1)), format='png', cmap='gray')
+    plt.imsave(buf, img, format='png', cmap='gray')
     buf.seek(0)
     img_base64 = base64.b64encode(buf.read()).decode('utf-8')
     return f"data:image/png;base64,{img_base64}"
