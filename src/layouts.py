@@ -25,10 +25,10 @@ fig_layout_dict = {
         traceorder="normal",
         font=dict(
             family="Arial",
-            size=12,
+            size=18,
             color="black"
         ),
-        bgcolor="White",
+        bgcolor="White"
     )
 }
 
@@ -46,8 +46,8 @@ fig_layout_dict_mammoth = {
         }
     },
     "margin": dict(l=20, r=20, t=100, b=20),
-    "paper_bgcolor": "White",
     "scene": {
+        "bgcolor": "rgb(229, 236, 246)",
         "xaxis": {
             "showgrid": False,
             "zeroline": False,
@@ -78,7 +78,8 @@ fig_layout_dict_mammoth = {
             color="black"
         ),
         bgcolor="White",
-    )
+    ),
+    "coloraxis_showscale": False
 }
 
 

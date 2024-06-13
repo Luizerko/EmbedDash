@@ -36,16 +36,18 @@ data_path = Path("data/")
 if not os.path.exists(data_path):
     os.makedirs(data_path)
     print(f'Folder "{data_path}" created.')
-dataframe_path = data_path / "test.pkl"
+dataframe_mnist_path = data_path / "mnist_data.pkl"
+dataframe_mammoth_path = data_path / "mammoth_data.pkl"
 
 app = Dash(__name__)
 
 
 ####################### DATA PREPROCESSING #######################
 
-if dataframe_path.exists():
+if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
-    df = pd.read_pickle(dataframe_path)
+    df = pd.read_pickle(dataframe_mnist_path)
+
 else:
     logger.info("Downloading MNIST data...")
     train_examples, train_labels, test_examples, test_labels = load_mnist()
@@ -117,9 +119,27 @@ else:
     df['y_shift'] = df['label'].map(lambda label: translations[label][1])
 
     # Save the DataFrame to a file for future use
-    df.to_pickle(dataframe_path)
+    df.to_pickle(dataframe_mnist_path)
 
-df_mammoth = load_mammoth()
+if dataframe_mammoth_path.exists():
+    # Load the DataFrame from the file
+    df_mammoth = pd.read_pickle(dataframe_mammoth_path)
+
+else:
+    df_mammoth = load_mammoth()
+
+    logger.info("Starting embedding computations for mammoth dataset")
+    
+    emb_mammoth_trimap = trimap.TRIMAP(n_dims=3).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
+    emb_mammoth_umap = umap.UMAP(n_components=3).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
+    logger.info("Starting t-sne")
+    emb_mammoth_tsne = TSNE(n_components=3, perplexity=30, n_iter=1000).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
+    
+    df_mammoth[['x_trimap', 'y_trimap', 'z_trimap']] = emb_mammoth_trimap
+    df_mammoth[['x_umap', 'y_umap', 'z_umap']] = emb_mammoth_umap
+    df_mammoth[['x_tsne', 'y_tsne', 'z_tsne']] = emb_mammoth_tsne
+    
+    df_mammoth.to_pickle(dataframe_mammoth_path)
 
 ########################## FIGURES ##########################
 
@@ -128,15 +148,15 @@ fig = px.scatter(
     df, x='x', y='y', color='label',
     title="TRIMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'},
-    width=800, height=640
+    hover_data={'label': False, 'x': False, 'y': False, 'image': False},
+    width=800, height=640, size_max=10
 ).update_layout(fig_layout_dict)
 
 umap_fig = px.scatter(
     df, x='x_umap', y='y_umap', color='label',
     title="UMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': True, 'x_umap': False, 'y_umap': False, 'image': 'image'},
+    hover_data={'label': False, 'x_umap': False, 'y_umap': False, 'image': False},
     width=400, height=320
 ).update_layout(small_fig_layout_dict)
 
@@ -144,32 +164,36 @@ tsne_fig = px.scatter(
     df, x='x_tsne', y='y_tsne', color='label',
     title="T-SNE Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': True, 'x_tsne': False, 'y_tsne': False, 'image': 'image'},
+    hover_data={'label': False, 'x_tsne': False, 'y_tsne': False, 'image': False},
     width=400, height=320
 ).update_layout(small_fig_layout_dict)
 
 
 original_mammoth = px.scatter_3d(
-    df_mammoth, x='x', y='y', z='z',
+    df_mammoth, x='x', y='y', z='z', color='label',
     title="Original Mammoth Data",
+    hover_data={'label': False, 'x': False, 'y': False, 'z': False},
     width=500, height=420
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 trimap_mammoth = px.scatter_3d(
-    df_mammoth, x='x', y='y', z='z',
+    df_mammoth, x='x_trimap', y='y_trimap', z='z_trimap', color='label',
     title="TriMap Embedding",
-    width=800, height=640
+    hover_data={'label': False, 'x_trimap': False, 'y_trimap': False, 'z_trimap': False},
+    width=700, height=520
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 umap_mammoth = px.scatter_3d(
-    df_mammoth, x='x', y='y', z='z',
+    df_mammoth, x='x_umap', y='y_umap', z='z_umap', color='label',
     title="UMAP Embedding",
+    hover_data={'label': False, 'x_umap': False, 'y_umap': False, 'z_umap': False},
     width=500, height=420
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 tsne_mammoth = px.scatter_3d(
-    df_mammoth, x='x', y='y', z='z',
+    df_mammoth, x='x_tsne', y='y_tsne', z='z_tsne', color='label',
     title="t-SNE Embedding",
+    hover_data={'label': False, 'x_tsne': False, 'y_tsne': False, 'z_tsne': False},
     width=500, height=420
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
@@ -192,7 +216,7 @@ app.layout = html.Div([
                         figure=fig,
                         style={"height": "60%"}
                     ),
-                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '70vh', 'justify-content': 'center', 'align-items': 'center'}),
+                ], style={'flex': '3', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justifyContent': 'flex-start', 'align-items': 'center'}),
 
                 ### Middle of the layout
                 html.Div([
@@ -214,7 +238,7 @@ app.layout = html.Div([
                             ),
                         ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
                     ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80%', 'minWidth': '230px', 'justify-content': 'space-between', 'display': 'flex', 'flexDirection': 'column'}),
-                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '70vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
+                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
 
                 ### Right side of the layout
                 html.Div([
@@ -222,32 +246,32 @@ app.layout = html.Div([
                     html.Div([
                         html.H3("Labels", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '10px', 'margin-bottom': '5px'}),
                         dcc.RadioItems(
-                            options=["label", *models.keys()],
-                            value='label',
+                            options=["Label", *models.keys()],
+                            value='Label',
                             id='controls-and-radio-item',
                             labelStyle={'display': 'block', 'font-family': 'Arial'}
                         )
-                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px'}),
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin-bottom': '10px', 'width': '85%'}),
 
                     # Box for images
                     html.Div([
-                        html.H3("Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
+                        html.H3("Hover Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
                         html.Div([
                             html.Img(id='hover-image', style={'height': '200px'}),
                             html.Div(id='hover-index', style={'font-family': 'Arial', 'padding': '10px'}),
                         ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
-
+                        html.H3("Click Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
                         html.Div([
                             html.Img(id='click-image', style={'height': '200px'}),
                             html.Div(id='click-index', style={'font-family': 'Arial', 'padding': '10px'})
                         ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
-                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '500px', 'minWidth': '230px'}),
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '85%', 'height': '100%'}),
 
                     html.Div([
                         html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '16px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
-                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'alignItems': 'center', 'display': 'flex', 'justifyContent': 'center', 'minWidth': '230px'}),
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'alignItems': 'center', 'display': 'flex', 'justifyContent': 'center', 'width': '85%', 'margin': '10px'}),
 
-                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'margin': '10px', 'hight': '70vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
+                ], style={'flex': '1', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
 
             ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
         ]),
@@ -268,10 +292,10 @@ app.layout = html.Div([
                         dcc.Graph(
                             id='trimap-mammoth',
                             figure=trimap_mammoth,
-                            style={"height": "60%"}
+                            style={"height": "50%"}
                         )
                     ])
-                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '90vh', 'justify-content': 'space-between', 'align-items': 'center'}),
+                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'space-between', 'align-items': 'center'}),
 
                 ### Right of the layout
                 html.Div([
@@ -294,7 +318,7 @@ app.layout = html.Div([
                         ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
                     ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80%', 'minWidth': '250px', 'justify-content': 'space-between', 'display': 'flex', 'flexDirection': 'column'}),
 
-                ], style={'flex': '1', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '90vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
+                ], style={'flex': '1', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
                 
                 ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh', 'flex': '0 0 auto'})
         ]),
@@ -381,7 +405,7 @@ def display_hover_image(MainhoverData, UMAPhoverData, TSNEhoverData):
     original_label = hoverData['points'][0]['customdata'][0]
     original_image = hoverData['points'][0]['customdata'][1]
 
-    return original_image, f'Original Label: {original_label}', None, None, None
+    return original_image, f'Label: {original_label}', None, None, None
 
 
 @callback(
@@ -406,7 +430,7 @@ def display_click_image(MainclickData, UMAPclickData, TSNEclickData):
         original_label = clickData['points'][0]['customdata'][0]
         original_image = clickData['points'][0]['customdata'][1]
 
-        return original_image, f'Original Label: {original_label}', None, None, None
+        return original_image, f'Label: {original_label}', None, None, None
     return '', '', None, None, None
 
 

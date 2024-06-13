@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from keras.datasets import mnist
+from sklearn.mixture import GaussianMixture
 
 
 def load_mnist(percentage=100):
@@ -26,8 +27,10 @@ def load_mnist(percentage=100):
     return train_examples, train_labels, test_examples, test_labels
 
 def load_mammoth():
-    df = pd.read_json("data/mammoth_3d_50k.json")
+    df = pd.read_json("data/mammoth_3d_10k.json")
     df = df.rename(columns={0: 'x', 1: 'y', 2: 'z'})
+    clustering = GaussianMixture(n_components=7, random_state=42).fit_predict(df.to_numpy())
+    df['label'] = clustering
     return df
 
 def convert_image_to_base64(img):
