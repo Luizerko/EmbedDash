@@ -330,7 +330,9 @@ app.layout = html.Div([
 
 
 @callback(
-    Output('scatter-plot', 'figure', allow_duplicate=True),
+    [Output('scatter-plot', 'figure', allow_duplicate=True),
+     Output('UMAP-plot', 'figure'),
+     Output('T-SNE-plot', 'figure')],
     Input(component_id='controls-and-radio-item', component_property='value'),
     State('scatter-plot', 'figure'),
     prevent_initial_call=True
@@ -343,8 +345,25 @@ def update_plot_labels(model_chosen, current_fig):
         hover_data={'label': True, 'x': False, 'y': False, 'image': False},
         width=1000, height=800
     )
+    
+    umap_fig = px.scatter(
+        df, x='x_umap', y='y_umap', color=model_chosen,
+        title="UMAP Embedding",
+        labels={'color': 'Digit', 'label': 'Label'},
+        hover_data={'label': False, 'x_umap': False, 'y_umap': False, 'image': False},
+        width=400, height=320
+    ).update_layout(small_fig_layout_dict)
+
+    tsne_fig = px.scatter(
+        df, x='x_tsne', y='y_tsne', color=model_chosen,
+        title="T-SNE Embedding",
+        labels={'color': 'Digit', 'label': 'Label'},
+        hover_data={'label': False, 'x_tsne': False, 'y_tsne': False, 'image': False},
+        width=400, height=320
+    ).update_layout(small_fig_layout_dict)
+    
     updated_fig.update_layout(fig_layout_dict)
-    return updated_fig
+    return updated_fig, umap_fig, tsne_fig
 
 
 # Callback for the latent space distances function
