@@ -2,6 +2,7 @@ import trimap
 import umap
 import numpy as np
 import pandas as pd
+import os
 
 import plotly.express as px
 
@@ -13,10 +14,11 @@ from scipy.optimize import minimize
 from dash import Dash, html, dcc, Input, Output, State, callback
 
 from logger import logger
-from layouts import fig_layout_dict, small_fig_layout_dict
+from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
 from models import train_and_predict, models
 from utils import (
     load_mnist,
+    load_mammoth,
     convert_images_to_base64,
     compute_centroids,
     compute_pairwise_distances,
@@ -31,16 +33,21 @@ from utils import (
 
 # Paths to cache files
 data_path = Path("data/")
-dataframe_path = data_path / "test.pkl"
+if not os.path.exists(data_path):
+    os.makedirs(data_path)
+    print(f'Folder "{data_path}" created.')
+dataframe_mnist_path = data_path / "mnist_data.pkl"
+dataframe_mammoth_path = data_path / "mammoth_data.pkl"
 
 app = Dash(__name__)
 
 
 ####################### DATA PREPROCESSING #######################
 
-if dataframe_path.exists():
+if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
-    df = pd.read_pickle(dataframe_path)
+    df = pd.read_pickle(dataframe_mnist_path)
+
 else:
     logger.info("Downloading MNIST data...")
     train_examples, train_labels, test_examples, test_labels = load_mnist()
@@ -62,7 +69,7 @@ else:
 
     # models that might need dimensionality reduction
     large_data = False
-    logger.info("examples:", len(examples))
+    #logger.info("examples:", len(examples))
     if len(examples) > 5000: # 5000 is an arbitrary choice
         large_data = True
 
@@ -108,42 +115,87 @@ else:
                                  args=(desired_distances,))
     translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
     
-    # REMOVE AS SOON AS THE CALLBACK IS WORKING
-    # for i in np.unique(labels):
-    #     df.loc[df['label'] == i, ['x', 'y']] += translations[i]
+    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
+    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
 
     # Save the DataFrame to a file for future use
-    df.to_pickle(dataframe_path)
+    df.to_pickle(dataframe_mnist_path)
 
+if dataframe_mammoth_path.exists():
+    # Load the DataFrame from the file
+    df_mammoth = pd.read_pickle(dataframe_mammoth_path)
 
+else:
+    df_mammoth = load_mammoth()
 
+    logger.info("Starting embedding computations for mammoth dataset")
+    
+    emb_mammoth_trimap = trimap.TRIMAP(n_dims=3).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
+    emb_mammoth_umap = umap.UMAP(n_components=3).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
+    logger.info("Starting t-sne")
+    emb_mammoth_tsne = TSNE(n_components=3, perplexity=30, n_iter=1000).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
+    
+    df_mammoth[['x_trimap', 'y_trimap', 'z_trimap']] = emb_mammoth_trimap
+    df_mammoth[['x_umap', 'y_umap', 'z_umap']] = emb_mammoth_umap
+    df_mammoth[['x_tsne', 'y_tsne', 'z_tsne']] = emb_mammoth_tsne
+    
+    df_mammoth.to_pickle(dataframe_mammoth_path)
 
 ########################## FIGURES ##########################
 
 
 fig = px.scatter(
     df, x='x', y='y', color='label',
-    title="TRIMAP embeddings on MNIST",
+    title="TRIMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': True, 'x': False, 'y': False, 'image': 'image'},
-    width=800, height=640
+    hover_data={'label': False, 'x': False, 'y': False, 'image': False},
+    width=800, height=640, size_max=10
 ).update_layout(fig_layout_dict)
 
 umap_fig = px.scatter(
     df, x='x_umap', y='y_umap', color='label',
-    title="UMAP embeddings on MNIST",
+    title="UMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': True, 'x_umap': False, 'y_umap': False, 'image': 'image'},
+    hover_data={'label': False, 'x_umap': False, 'y_umap': False, 'image': False},
     width=400, height=320
 ).update_layout(small_fig_layout_dict)
 
 tsne_fig = px.scatter(
     df, x='x_tsne', y='y_tsne', color='label',
-    title="T-SNE embeddings on MNIST",
+    title="T-SNE Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': True, 'x_tsne': False, 'y_tsne': False, 'image': 'image'},
+    hover_data={'label': False, 'x_tsne': False, 'y_tsne': False, 'image': False},
     width=400, height=320
 ).update_layout(small_fig_layout_dict)
+
+
+original_mammoth = px.scatter_3d(
+    df_mammoth, x='x', y='y', z='z', color='label',
+    title="Original Mammoth Data",
+    hover_data={'label': False, 'x': False, 'y': False, 'z': False},
+    width=500, height=420
+).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+
+trimap_mammoth = px.scatter_3d(
+    df_mammoth, x='x_trimap', y='y_trimap', z='z_trimap', color='label',
+    title="TriMap Embedding",
+    hover_data={'label': False, 'x_trimap': False, 'y_trimap': False, 'z_trimap': False},
+    width=700, height=520
+).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+
+umap_mammoth = px.scatter_3d(
+    df_mammoth, x='x_umap', y='y_umap', z='z_umap', color='label',
+    title="UMAP Embedding",
+    hover_data={'label': False, 'x_umap': False, 'y_umap': False, 'z_umap': False},
+    width=500, height=420
+).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+
+tsne_mammoth = px.scatter_3d(
+    df_mammoth, x='x_tsne', y='y_tsne', z='z_tsne', color='label',
+    title="t-SNE Embedding",
+    hover_data={'label': False, 'x_tsne': False, 'y_tsne': False, 'z_tsne': False},
+    width=500, height=420
+).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 
 ####################### APP LAYOUT #######################
@@ -153,79 +205,125 @@ tsne_fig = px.scatter(
 # fig_sub2 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
 
 
-
 app.layout = html.Div([
-    ### Left side of the layout
-    html.Div([
-        dcc.Graph(
-            id='scatter-plot',
-            figure=fig,
-            style={"height": "60%"}
-        ),
-    ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '90vh'}),
-
-
-
-    ### Middle of the layout
-    html.Div([
-        # Box for Plots
-        html.Div([
-            html.H3("Other methods", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '30px', 'margin-bottom': '5px'}),
+    dcc.Tabs([
+        dcc.Tab(label='MNIST Data', children=[
             html.Div([
-                html.H4("UMAP", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
-                dcc.Graph(
-                    id='UMAP-plot',
-                    figure=umap_fig,
-                    style={"width": "100%", "display": "inline-block", 'height': '300px'}
-                ),
-            ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+                ### Left side of the layout
+                html.Div([
+                    dcc.Graph(
+                        id='scatter-plot',
+                        figure=fig,
+                        style={"height": "60%"}
+                    ),
+                ], style={'flex': '3', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justifyContent': 'flex-start', 'align-items': 'center'}),
 
+                ### Middle of the layout
+                html.Div([
+                    # Box for Plots
+                    html.Div([
+                        html.Div([
+                            dcc.Graph(
+                                id='UMAP-plot',
+                                figure=umap_fig,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+
+                        html.Div([
+                            dcc.Graph(
+                                id='T-SNE-plot',
+                                figure=tsne_fig,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80%', 'minWidth': '230px', 'justify-content': 'space-between', 'display': 'flex', 'flexDirection': 'column'}),
+                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
+
+                ### Right side of the layout
+                html.Div([
+                    # Box for RadioItems
+                    html.Div([
+                        html.H3("Labels", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '10px', 'margin-bottom': '5px'}),
+                        dcc.RadioItems(
+                            options=["label", *models.keys()],
+                            value='label',
+                            id='controls-and-radio-item',
+                            labelStyle={'display': 'block', 'font-family': 'Arial'}
+                        )
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin-bottom': '10px', 'width': '85%'}),
+
+                    # Box for images
+                    html.Div([
+                        html.H3("Hover Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
+                        html.Div([
+                            html.Img(id='hover-image', style={'height': '200px'}),
+                            html.Div(id='hover-index', style={'font-family': 'Arial', 'padding': '10px'}),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+                        html.H3("Click Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
+                        html.Div([
+                            html.Img(id='click-image', style={'height': '200px'}),
+                            html.Div(id='click-index', style={'font-family': 'Arial', 'padding': '10px'})
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '85%', 'height': '100%'}),
+
+                    html.Div([
+                        html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '16px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'alignItems': 'center', 'display': 'flex', 'justifyContent': 'center', 'width': '85%', 'margin': '10px'}),
+
+                ], style={'flex': '1', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
+
+            ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
+        ]),
+
+        dcc.Tab(label='Mammoth Data', children=[
             html.Div([
-                html.H4("t-SNE", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '30px', 'margin-bottom': '5px'}),
-                dcc.Graph(
-                    id='T-SNE-plot',
-                    figure=tsne_fig,
-                    style={"width": "100%", "display": "inline-block", 'height': '300px'}
-                ),
-            ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
-        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '480px', 'minWidth': '230px'}),
-    ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '90vh'}),
 
+                ### Left side of the layout
+                html.Div([
+                    html.Div([
+                        dcc.Graph(
+                        id='original-mammoth',
+                        figure=original_mammoth,
+                        style={"height": "30%"}
+                        )
+                    ]),
+                    html.Div([
+                        dcc.Graph(
+                            id='trimap-mammoth',
+                            figure=trimap_mammoth,
+                            style={"height": "50%"}
+                        )
+                    ])
+                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'space-between', 'align-items': 'center'}),
 
-    ### Right side of the layout
-    html.Div([
-        # Box for RadioItems
-        html.Div([
-            html.H3("Labels", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '30px', 'margin-bottom': '5px'}),
-            dcc.RadioItems(
-                options=["label", *models.keys()],
-                value='label',
-                id='controls-and-radio-item',
-                labelStyle={'display': 'block', 'font-family': 'Arial'}
-            )
-        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px'}),
+                ### Right of the layout
+                html.Div([
+                    # Box for Plots
+                    html.Div([
+                        html.Div([
+                            dcc.Graph(
+                                id='UMAP Plot',
+                                figure=umap_mammoth,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
 
-        # Box for images
-        html.Div([
-            html.H3("Sample", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
-            html.Div([
-                html.Img(id='hover-image', style={'height': '200px'}),
-                html.Div(id='hover-index', style={'font-family': 'Arial', 'padding': '10px'}),
-            ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+                        html.Div([
+                            dcc.Graph(
+                                id='t-SNE Plot',
+                                figure=tsne_mammoth,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80%', 'minWidth': '250px', 'justify-content': 'space-between', 'display': 'flex', 'flexDirection': 'column'}),
 
-            html.Div([
-                html.Img(id='click-image', style={'height': '200px'}),
-                html.Div(id='click-index', style={'font-family': 'Arial', 'padding': '10px'})
-            ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
-        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '500px', 'minWidth': '230px'}),
-
-        html.Div([
-            html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0)
-        ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'alignItems': 'center', 'display': 'flex', 'justifyContent': 'center', 'minWidth': '230px'}),
-
-    ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'margin': '10px'}),
-], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
-
+                ], style={'flex': '1', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
+                
+                ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh', 'flex': '0 0 auto'})
+        ]),
+    ])
+])
 
 
 ####################### CALLBACKS #######################
@@ -263,11 +361,11 @@ def update_plot(n_clicks, current_fig):
     if n_clicks > 0:
 
         if n_clicks%2 != 0:
-            for i in np.unique(df['label']):
-                df.loc[df['label'] == i, ['x', 'y']] += translations[i]
+            df['x'] = df['x'] + df['x_shift']
+            df['y'] = df['y'] + df['y_shift']
         else:
-            for i in np.unique(df['label']):
-                df.loc[df['label'] == i, ['x', 'y']] -= translations[i]
+            df['x'] = df['x'] - df['x_shift']
+            df['y'] = df['y'] - df['y_shift']
 
         updated_fig = px.scatter(
             df, x='x', y='y', color='label',
@@ -307,7 +405,7 @@ def display_hover_image(MainhoverData, UMAPhoverData, TSNEhoverData):
     original_label = hoverData['points'][0]['customdata'][0]
     original_image = hoverData['points'][0]['customdata'][1]
 
-    return original_image, f'Original Label: {original_label}', None, None, None
+    return original_image, f'Label: {original_label}', None, None, None
 
 
 @callback(
@@ -332,7 +430,7 @@ def display_click_image(MainclickData, UMAPclickData, TSNEclickData):
         original_label = clickData['points'][0]['customdata'][0]
         original_image = clickData['points'][0]['customdata'][1]
 
-        return original_image, f'Original Label: {original_label}', None, None, None
+        return original_image, f'Label: {original_label}', None, None, None
     return '', '', None, None, None
 
 
