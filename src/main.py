@@ -246,8 +246,8 @@ app.layout = html.Div([
                     html.Div([
                         html.H3("Labels", style={'text-align': 'center', 'font-family': 'Arial', 'margin-top': '10px', 'margin-bottom': '5px'}),
                         dcc.RadioItems(
-                            options=["Label", *models.keys()],
-                            value='Label',
+                            options=["label", *models.keys()],
+                            value='label',
                             id='controls-and-radio-item',
                             labelStyle={'display': 'block', 'font-family': 'Arial'}
                         )
