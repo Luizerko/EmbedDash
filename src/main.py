@@ -8,6 +8,9 @@ import plotly.express as px
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from keras.api.applications import ResNet50
+from keras.api.datasets.cifar10 import load_data
+from keras.api.utils import to_categorical
 
 from pathlib import Path
 from scipy.optimize import minimize
@@ -15,7 +18,7 @@ from dash import Dash, html, dcc, Input, Output, State, callback
 
 from logger import logger
 from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
-from models import train_and_predict, models
+from models import train_and_predict, models, predict_latent
 from utils import (
     load_mnist,
     load_mammoth,
@@ -38,12 +41,15 @@ if not os.path.exists(data_path):
     print(f'Folder "{data_path}" created.')
 dataframe_mnist_path = data_path / "mnist_data.pkl"
 dataframe_mammoth_path = data_path / "mammoth_data.pkl"
+latent_data_path = data_path / "latent_data.pkl"
+
 
 app = Dash(__name__)
 
 
 ####################### DATA PREPROCESSING #######################
 
+### MNIST
 if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
     df = pd.read_pickle(dataframe_mnist_path)
@@ -121,6 +127,8 @@ else:
     # Save the DataFrame to a file for future use
     df.to_pickle(dataframe_mnist_path)
 
+
+### Mammoth
 if dataframe_mammoth_path.exists():
     # Load the DataFrame from the file
     df_mammoth = pd.read_pickle(dataframe_mammoth_path)
@@ -140,6 +148,39 @@ else:
     df_mammoth[['x_tsne', 'y_tsne', 'z_tsne']] = emb_mammoth_tsne
     
     df_mammoth.to_pickle(dataframe_mammoth_path)
+
+
+
+### Latent
+if not latent_data_path.exists():
+    (_, _), (x_test, y_test) = load_data()
+    resnet_model = ResNet50(input_shape=(32, 32, 3), classes=to_categorical(y_test).shape[1], include_top=False)
+
+    latent_data = predict_latent(resnet_model, x_test)
+    latent_data = latent_data.reshape(latent_data.shape[0], -1)
+    
+    # Transform the data using trimap, umap and tsne
+    emb_latent_trimap = trimap.TRIMAP().fit_transform(latent_data)
+    emb_latent_umap = umap.UMAP().fit_transform(latent_data)
+    emb_latent_tsne = TSNE(n_components=2, perplexity=30, n_iter=1000).fit_transform(latent_data)
+
+    df_latent = pd.DataFrame({ # squeeze the columns
+        'x': emb_latent_trimap[:, 0].squeeze(),
+        'y': emb_latent_trimap[:, 1].squeeze(),
+        'x_umap': emb_latent_umap[:, 0].squeeze(),
+        'y_umap': emb_latent_umap[:, 1].squeeze(),
+        'x_tsne': emb_latent_tsne[:, 0].squeeze(),
+        'y_tsne': emb_latent_tsne[:, 1].squeeze(),
+        'label': y_test.squeeze(),
+        'index': np.arange(len(y_test))
+    })
+
+    # Dump the latent data to a file
+    df_latent.to_pickle(latent_data_path)
+else:
+    # Load the latent data from the file
+    df_latent = pd.read_pickle(latent_data_path)
+
 
 ########################## FIGURES ##########################
 
@@ -201,13 +242,10 @@ tsne_mammoth = px.scatter_3d(
 ####################### APP LAYOUT #######################
 
 
-# fig_sub1 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
-# fig_sub2 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
-
-
 app.layout = html.Div([
-    dcc.Tabs([
-        dcc.Tab(label='MNIST Data', children=[
+    dcc.Tabs(id='tabs', value='tabs', children=[
+        dcc.Tab(label='MNIST Data', id='mnist-data', value='mnist-data',
+                children=[
             html.Div([
                 ### Left side of the layout
                 html.Div([
@@ -276,9 +314,8 @@ app.layout = html.Div([
             ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
         ]),
 
-        dcc.Tab(label='Mammoth Data', children=[
+        dcc.Tab(label='Mammoth Data', id='mammoth-data', value='mammoth-data', children=[
             html.Div([
-
                 ### Left side of the layout
                 html.Div([
                     html.Div([
@@ -401,30 +438,46 @@ def update_plot(n_clicks, current_fig):
 @callback(
     [Output('hover-image', 'src'),
      Output('hover-index', 'children'),
+     Output('hover-image-latent', 'src'),
+     Output('hover-index-latent', 'children'),
      Output('scatter-plot', 'hoverData'),
      Output('UMAP-plot', 'hoverData'),
-     Output('T-SNE-plot', 'hoverData')],
-    [Input('scatter-plot', 'hoverData'),
+     Output('T-SNE-plot', 'hoverData'),
+     Output('scatter-plot-latent', 'hoverData'),
+     Output('UMAP-plot-latent', 'hoverData'),
+     Output('T-SNE-plot-latent', 'hoverData')],
+    [Input('tabs', 'value'),
+     Input('scatter-plot', 'hoverData'),
      Input('UMAP-plot', 'hoverData'),
-     Input('T-SNE-plot', 'hoverData')]
+     Input('T-SNE-plot', 'hoverData'),
+     Input('scatter-plot-latent', 'hoverData'),
+     Input('UMAP-plot-latent', 'hoverData'),
+     Input('T-SNE-plot-latent', 'hoverData')]
 )
-def display_hover_image(MainhoverData, UMAPhoverData, TSNEhoverData):
-    
+def display_hover_image(tab, MainhoverData, UMAPhoverData, TSNEhoverData, MainhoverDataLatent, UMAPhoverDataLatent, TSNEhoverDataLatent):
+    print("current tab:", tab)
     # if you are hovering over any of the input images, get that hoverData
     hoverData = None
-    inputs = [MainhoverData, UMAPhoverData, TSNEhoverData]
+    inputs = [MainhoverData, UMAPhoverData, TSNEhoverData, MainhoverDataLatent, UMAPhoverDataLatent, TSNEhoverDataLatent]
     for inp in inputs:
         if inp is not None:
             hoverData = inp
             break
     
     if hoverData is None:
-        return '', '', None, None, None
+        return '', '', None, None, None, None, None, None, None, None
 
     original_label = hoverData['points'][0]['customdata'][0]
     original_image = hoverData['points'][0]['customdata'][1]
+    
+    if tab == 'mnist-data':
+        return original_image, f'Label: {original_label}', None, None, hoverData, None, None, None, None, None
+    elif tab == 'latent-data':
+        return None, None, None, None, None, None, None, original_image, f'Label: {original_label}', None
+    else:
+        return '', '', None, None, None, None, None, None, None, None
 
-    return original_image, f'Label: {original_label}', None, None, None
+    # return original_image, f'Label: {original_label}', None, None, None, None, None, None, None, None
 
 
 @callback(
