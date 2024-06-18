@@ -75,7 +75,7 @@ else:
 
     if large_data:
         logger.info("in PCA")
-        pca = PCA(n_components=50)  # Reduce to 50 dimensions (arbitrary choice)
+        pca = PCA(n_components=90)  # Reduce to 90 dimensions (gives 90% explained variance)
         examples = pca.fit_transform(examples)
 
     logger.info("in TSNE")
