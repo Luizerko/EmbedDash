@@ -9,4 +9,4 @@ scipy
 tensorflow
 keras
 umap-learn
-sklearn
+scikit-learn
