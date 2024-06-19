@@ -283,8 +283,9 @@ tsne_mammoth = px.scatter_3d(
 
 
 app.layout = html.Div([
-    dcc.Tabs([
-        dcc.Tab(label='MNIST Data', children=[
+    dcc.Tabs(id='tabs', value='tabs', children=[
+        dcc.Tab(label='MNIST Data', id='mnist-data', value='mnist-data',
+                children=[
             html.Div([
                 ### Left side of the layout
                 html.Div([
@@ -353,9 +354,8 @@ app.layout = html.Div([
             ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
         ]),
 
-        dcc.Tab(label='Mammoth Data', children=[
+        dcc.Tab(label='Mammoth Data', id='mammoth-data', value='mammoth-data', children=[
             html.Div([
-
                 ### Left side of the layout
                 html.Div([
                     html.Div([
@@ -513,30 +513,46 @@ def update_plot(n_clicks, current_fig):
 @callback(
     [Output('hover-image', 'src'),
      Output('hover-index', 'children'),
+     Output('hover-image-latent', 'src'),
+     Output('hover-index-latent', 'children'),
      Output('scatter-plot', 'hoverData'),
      Output('UMAP-plot', 'hoverData'),
-     Output('T-SNE-plot', 'hoverData')],
-    [Input('scatter-plot', 'hoverData'),
+     Output('T-SNE-plot', 'hoverData'),
+     Output('scatter-plot-latent', 'hoverData'),
+     Output('UMAP-plot-latent', 'hoverData'),
+     Output('T-SNE-plot-latent', 'hoverData')],
+    [Input('tabs', 'value'),
+     Input('scatter-plot', 'hoverData'),
      Input('UMAP-plot', 'hoverData'),
-     Input('T-SNE-plot', 'hoverData')]
+     Input('T-SNE-plot', 'hoverData'),
+     Input('scatter-plot-latent', 'hoverData'),
+     Input('UMAP-plot-latent', 'hoverData'),
+     Input('T-SNE-plot-latent', 'hoverData')]
 )
-def display_hover_image(MainhoverData, UMAPhoverData, TSNEhoverData):
-    
+def display_hover_image(tab, MainhoverData, UMAPhoverData, TSNEhoverData, MainhoverDataLatent, UMAPhoverDataLatent, TSNEhoverDataLatent):
+    print("current tab:", tab)
     # if you are hovering over any of the input images, get that hoverData
     hoverData = None
-    inputs = [MainhoverData, UMAPhoverData, TSNEhoverData]
+    inputs = [MainhoverData, UMAPhoverData, TSNEhoverData, MainhoverDataLatent, UMAPhoverDataLatent, TSNEhoverDataLatent]
     for inp in inputs:
         if inp is not None:
             hoverData = inp
             break
     
     if hoverData is None:
-        return '', '', None, None, None
+        return '', '', None, None, None, None, None, None, None, None
 
     original_label = hoverData['points'][0]['customdata'][0]
     original_image = hoverData['points'][0]['customdata'][1]
+    
+    if tab == 'mnist-data':
+        return original_image, f'Label: {original_label}', None, None, hoverData, None, None, None, None, None
+    elif tab == 'latent-data':
+        return None, None, None, None, None, None, None, original_image, f'Label: {original_label}', None
+    else:
+        return '', '', None, None, None, None, None, None, None, None
 
-    return original_image, f'Label: {original_label}', None, None, None
+    # return original_image, f'Label: {original_label}', None, None, None, None, None, None, None, None
 
 
 @callback(
