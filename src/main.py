@@ -8,6 +8,11 @@ import plotly.express as px
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from keras.api.applications import ResNet50
+from keras.api.layers import Flatten, Dense
+from keras.api.models import Sequential
+from keras.api.datasets.cifar10 import load_data
+from keras.api.utils import to_categorical
 
 from pathlib import Path
 from scipy.optimize import minimize
@@ -15,7 +20,7 @@ from dash import Dash, html, dcc, Input, Output, State, callback
 
 from logger import logger
 from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
-from models import train_and_predict, models
+from models import train_and_predict, models, train_and_predict_latent
 from utils import (
     load_mnist,
     load_mammoth,
@@ -38,15 +43,18 @@ if not os.path.exists(data_path):
     print(f'Folder "{data_path}" created.')
 dataframe_mnist_path = data_path / "mnist_data.pkl"
 dataframe_mammoth_path = data_path / "mammoth_data.pkl"
+latent_data_path = data_path / "latent_data.pkl"
 
 app = Dash(__name__)
 
 
 ####################### DATA PREPROCESSING #######################
 
+### MNIST DATA
 if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
-    df = pd.read_pickle(dataframe_mnist_path)
+    df_mnist = pd.read_pickle(dataframe_mnist_path)
+    df = df_mnist
 
 else:
     logger.info("Downloading MNIST data...")
@@ -86,7 +94,7 @@ else:
 
 
     # Create a DataFrame for Plotly
-    df = pd.DataFrame({
+    df_mnist = pd.DataFrame({
         'x': emb_mnist_trimap[:, 0],
         'y': emb_mnist_trimap[:, 1],
         'x_umap': emb_mnist_umap[:, 0],
@@ -99,15 +107,15 @@ else:
     })
 
     # Getting the embedding centroids and computing the correspondent translation to get move them to the latent space distance
-    df['x'] = (df['x'] - df['x'].min())/(df['x'].max() - df['x'].min())
-    df['y'] = (df['y'] - df['y'].min())/(df['y'].max() - df['y'].min())
-    trimap_centroids = compute_centroids(np.array(df[['x', 'y']]), np.array(df['label']))
+    df_mnist['x'] = (df_mnist['x'] - df_mnist['x'].min())/(df_mnist['x'].max() - df_mnist['x'].min())
+    df_mnist['y'] = (df_mnist['y'] - df_mnist['y'].min())/(df_mnist['y'].max() - df_mnist['y'].min())
+    trimap_centroids = compute_centroids(np.array(df_mnist[['x', 'y']]), np.array(df_mnist['label']))
 
     # Train models and predict labels
     for model_name, model in models.items():
         logger.info(f"Training {model_name}...")
         model_predictions = train_and_predict(models[model_name], emb_mnist_trimap, labels, emb_mnist_trimap)
-        df[model_name] = model_predictions
+        df_mnist[model_name] = model_predictions
 
     optimal_positions = minimize(objective_function,
                                  np.array([*trimap_centroids.values()]).reshape(20),
@@ -115,12 +123,15 @@ else:
                                  args=(desired_distances,))
     translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
     
-    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
-    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
+    df_mnist['x_shift'] = df_mnist['label'].map(lambda label: translations[label][0])
+    df_mnist['y_shift'] = df_mnist['label'].map(lambda label: translations[label][1])
 
     # Save the DataFrame to a file for future use
-    df.to_pickle(dataframe_mnist_path)
+    df_mnist.to_pickle(dataframe_mnist_path)
+    df = df_mnist
 
+
+### Mammoth Data
 if dataframe_mammoth_path.exists():
     # Load the DataFrame from the file
     df_mammoth = pd.read_pickle(dataframe_mammoth_path)
@@ -141,9 +152,48 @@ else:
     
     df_mammoth.to_pickle(dataframe_mammoth_path)
 
+
+
+### Latent
+if not latent_data_path.exists():
+    (_, _), (x_test, y_test) = load_data()
+    y_test_ohe = to_categorical(y_test)
+    resnet_model = ResNet50(input_shape=(32, 32, 3), classes=y_test_ohe.shape[1], include_top=False)
+    model = Sequential()
+    model.add(resnet_model)
+    model.add(Flatten())
+    model.add(Dense(y_test_ohe.shape[1], activation='softmax'))
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+    latent_data = train_and_predict_latent(model, x_test, y_test_ohe)
+    latent_data = latent_data.reshape(latent_data.shape[0], -1)
+    
+    # Transform the data using trimap, umap and tsne
+    emb_latent_trimap = trimap.TRIMAP().fit_transform(latent_data)
+    emb_latent_umap = umap.UMAP().fit_transform(latent_data)
+    emb_latent_tsne = TSNE(n_components=2, perplexity=30, n_iter=1000).fit_transform(latent_data)
+
+    df_latent = pd.DataFrame({ # squeeze the columns
+        'x': emb_latent_trimap[:, 0].squeeze(),
+        'y': emb_latent_trimap[:, 1].squeeze(),
+        'x_umap': emb_latent_umap[:, 0].squeeze(),
+        'y_umap': emb_latent_umap[:, 1].squeeze(),
+        'x_tsne': emb_latent_tsne[:, 0].squeeze(),
+        'y_tsne': emb_latent_tsne[:, 1].squeeze(),
+        'label': y_test.squeeze(),
+        'index': np.arange(len(y_test))
+    })
+
+    # Dump the latent data to a file
+    df_latent.to_pickle(latent_data_path)
+else:
+    # Load the latent data from the file
+    df_latent = pd.read_pickle(latent_data_path)
+
+
 ########################## FIGURES ##########################
 
-
+### MNIST
 fig = px.scatter(
     df, x='x', y='y', color='label',
     title="TRIMAP Embedding",
@@ -169,6 +219,35 @@ tsne_fig = px.scatter(
 ).update_layout(small_fig_layout_dict)
 
 
+### LATENT
+fig_latent = px.scatter(
+    df_latent, x='x', y='y', color='label',
+    title="TRIMAP Embedding",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': False, 'x': False, 'y': False},
+    width=800, height=640, size_max=10
+).update_layout(fig_layout_dict)
+
+
+umap_fig_latent = px.scatter(
+    df_latent, x='x_umap', y='y_umap', color='label',
+    title="UMAP Embedding",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': False, 'x_umap': False, 'y_umap': False},
+    width=400, height=320
+).update_layout(small_fig_layout_dict)
+
+
+tsne_fig_latent = px.scatter(
+    df_latent, x='x_tsne', y='y_tsne', color='label',
+    title="T-SNE Embedding",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': False, 'x_tsne': False, 'y_tsne': False},
+    width=400, height=320
+).update_layout(small_fig_layout_dict)
+
+
+### Mammoth
 original_mammoth = px.scatter_3d(
     df_mammoth, x='x', y='y', z='z', color='label',
     title="Original Mammoth Data",
@@ -198,11 +277,9 @@ tsne_mammoth = px.scatter_3d(
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 
+
+
 ####################### APP LAYOUT #######################
-
-
-# fig_sub1 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
-# fig_sub2 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
 
 
 app.layout = html.Div([
@@ -321,6 +398,41 @@ app.layout = html.Div([
                 ], style={'flex': '1', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
                 
                 ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh', 'flex': '0 0 auto'})
+        ]),
+        
+        dcc.Tab(label='Latent Data', children=[
+            html.Div([
+                ### Left side of the layout
+                html.Div([
+                    dcc.Graph(
+                        id='scatter-plot-latent',
+                        figure=fig_latent,
+                        style={"height": "60%"}
+                    ),
+                ], style={'flex': '3', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justifyContent': 'flex-start', 'align-items': 'center'}),
+
+                ### Middle of the layout
+                html.Div([
+                    # Box for Plots
+                    html.Div([
+                        html.Div([
+                            dcc.Graph(
+                                id='UMAP-plot-latent',
+                                figure=umap_fig_latent,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+
+                        html.Div([
+                            dcc.Graph(
+                                id='T-SNE-plot-latent',
+                                figure=tsne_fig_latent,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80%', 'minWidth': '230px', 'justify-content': 'space-between', 'display': 'flex', 'flexDirection': 'column'}),
+                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
+            ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
         ]),
     ])
 ])
@@ -451,6 +563,7 @@ def display_click_image(MainclickData, UMAPclickData, TSNEclickData):
 
         return original_image, f'Label: {original_label}', None, None, None
     return '', '', None, None, None
+
 
 
 if __name__ == '__main__':
