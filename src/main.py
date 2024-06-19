@@ -8,6 +8,11 @@ import plotly.express as px
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from keras.api.applications import ResNet50
+from keras.api.layers import Flatten, Dense
+from keras.api.models import Sequential
+from keras.api.datasets.cifar10 import load_data
+from keras.api.utils import to_categorical
 
 from pathlib import Path
 from scipy.optimize import minimize
@@ -49,7 +54,8 @@ app = Dash(__name__)
 ### MNIST Data
 if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
-    df = pd.read_pickle(dataframe_mnist_path)
+    df_mnist = pd.read_pickle(dataframe_mnist_path)
+    df = df_mnist
 
 else:
     logger.info("Downloading MNIST data...")
@@ -89,7 +95,7 @@ else:
 
 
     # Create a DataFrame for Plotly
-    df = pd.DataFrame({
+    df_mnist = pd.DataFrame({
         'x': emb_mnist_trimap[:, 0],
         'y': emb_mnist_trimap[:, 1],
         'x_umap': emb_mnist_umap[:, 0],
@@ -102,15 +108,15 @@ else:
     })
 
     # Getting the embedding centroids and computing the correspondent translation to get move them to the latent space distance
-    df['x'] = (df['x'] - df['x'].min())/(df['x'].max() - df['x'].min())
-    df['y'] = (df['y'] - df['y'].min())/(df['y'].max() - df['y'].min())
-    trimap_centroids = compute_centroids(np.array(df[['x', 'y']]), np.array(df['label']))
+    df_mnist['x'] = (df_mnist['x'] - df_mnist['x'].min())/(df_mnist['x'].max() - df_mnist['x'].min())
+    df_mnist['y'] = (df_mnist['y'] - df_mnist['y'].min())/(df_mnist['y'].max() - df_mnist['y'].min())
+    trimap_centroids = compute_centroids(np.array(df_mnist[['x', 'y']]), np.array(df_mnist['label']))
 
     # Train models and predict labels
     for model_name, model in models.items():
         logger.info(f"Training {model_name}...")
         model_predictions = train_and_predict(models[model_name], emb_mnist_trimap, labels, emb_mnist_trimap)
-        df[model_name] = model_predictions
+        df_mnist[model_name] = model_predictions
 
     optimal_positions = minimize(objective_function,
                                  np.array([*trimap_centroids.values()]).reshape(20),
@@ -118,11 +124,12 @@ else:
                                  args=(desired_distances,))
     translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
     
-    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
-    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
+    df_mnist['x_shift'] = df_mnist['label'].map(lambda label: translations[label][0])
+    df_mnist['y_shift'] = df_mnist['label'].map(lambda label: translations[label][1])
 
     # Save the DataFrame to a file for future use
-    df.to_pickle(dataframe_mnist_path)
+    df_mnist.to_pickle(dataframe_mnist_path)
+    df = df_mnist
 
 
 ### Mammoth Data
@@ -247,8 +254,9 @@ tsne_fig_latent = px.scatter(
 
 
 app.layout = html.Div([
-    dcc.Tabs([
-        dcc.Tab(label='MNIST Data', children=[
+    dcc.Tabs(id='tabs', value='tabs', children=[
+        dcc.Tab(label='MNIST Data', id='mnist-data', value='mnist-data',
+                children=[
             html.Div([
                 ### Left side of the layout
                 html.Div([
@@ -317,9 +325,8 @@ app.layout = html.Div([
             ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
         ]),
 
-        dcc.Tab(label='Mammoth Data', children=[
+        dcc.Tab(label='Mammoth Data', id='mammoth-data', value='mammoth-data', children=[
             html.Div([
-
                 ### Left side of the layout
                 html.Div([
                     html.Div([
@@ -478,30 +485,46 @@ def update_plot(n_clicks, current_fig):
 @callback(
     [Output('hover-image', 'src'),
      Output('hover-index', 'children'),
+     Output('hover-image-latent', 'src'),
+     Output('hover-index-latent', 'children'),
      Output('scatter-plot', 'hoverData'),
      Output('UMAP-plot', 'hoverData'),
-     Output('T-SNE-plot', 'hoverData')],
-    [Input('scatter-plot', 'hoverData'),
+     Output('T-SNE-plot', 'hoverData'),
+     Output('scatter-plot-latent', 'hoverData'),
+     Output('UMAP-plot-latent', 'hoverData'),
+     Output('T-SNE-plot-latent', 'hoverData')],
+    [Input('tabs', 'value'),
+     Input('scatter-plot', 'hoverData'),
      Input('UMAP-plot', 'hoverData'),
-     Input('T-SNE-plot', 'hoverData')]
+     Input('T-SNE-plot', 'hoverData'),
+     Input('scatter-plot-latent', 'hoverData'),
+     Input('UMAP-plot-latent', 'hoverData'),
+     Input('T-SNE-plot-latent', 'hoverData')]
 )
-def display_hover_image(MainhoverData, UMAPhoverData, TSNEhoverData):
-    
+def display_hover_image(tab, MainhoverData, UMAPhoverData, TSNEhoverData, MainhoverDataLatent, UMAPhoverDataLatent, TSNEhoverDataLatent):
+    print("current tab:", tab)
     # if you are hovering over any of the input images, get that hoverData
     hoverData = None
-    inputs = [MainhoverData, UMAPhoverData, TSNEhoverData]
+    inputs = [MainhoverData, UMAPhoverData, TSNEhoverData, MainhoverDataLatent, UMAPhoverDataLatent, TSNEhoverDataLatent]
     for inp in inputs:
         if inp is not None:
             hoverData = inp
             break
     
     if hoverData is None:
-        return '', '', None, None, None
+        return '', '', None, None, None, None, None, None, None, None
 
     original_label = hoverData['points'][0]['customdata'][0]
     original_image = hoverData['points'][0]['customdata'][1]
+    
+    if tab == 'mnist-data':
+        return original_image, f'Label: {original_label}', None, None, hoverData, None, None, None, None, None
+    elif tab == 'latent-data':
+        return None, None, None, None, None, None, None, original_image, f'Label: {original_label}', None
+    else:
+        return '', '', None, None, None, None, None, None, None, None
 
-    return original_image, f'Label: {original_label}', None, None, None
+    # return original_image, f'Label: {original_label}', None, None, None, None, None, None, None, None
 
 
 @callback(
@@ -528,6 +551,7 @@ def display_click_image(MainclickData, UMAPclickData, TSNEclickData):
 
         return original_image, f'Label: {original_label}', None, None, None
     return '', '', None, None, None
+
 
 
 if __name__ == '__main__':
