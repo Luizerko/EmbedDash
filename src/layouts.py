@@ -11,7 +11,7 @@ fig_layout_dict = {
             'weight': 'bold'
         }
     },
-    "margin": dict(l=20, r=20, t=100, b=20),
+    "margin": dict(l=20, r=20, t=70, b=20),
     "paper_bgcolor": "White",
     "xaxis": dict(showgrid=False, zeroline=False, visible=False),
     "yaxis": dict(showgrid=False, zeroline=False, visible=False),
@@ -45,7 +45,7 @@ fig_layout_dict_mammoth = {
             'weight': 'bold'
         }
     },
-    "margin": dict(l=20, r=20, t=100, b=20),
+    "margin": dict(l=20, r=20, t=60, b=20),
     "scene": {
         "bgcolor": "rgb(229, 236, 246)",
         "xaxis": {
@@ -62,8 +62,32 @@ fig_layout_dict_mammoth = {
             "showgrid": False,
             "zeroline": False, 
             "visible": False
+        },
+        "camera": {
+            'eye': {
+                "x" :1.25,
+                "y" :1.25,
+                "z" :1.25
+            },
+            'up': {
+                "x" :-1,
+                "y" :0.25,
+                "z" :-1
+            },
+            'center': {
+                "x" :0,
+                "y" :0,
+                "z" :0
+            }
         }
     },
+    # "scene_camera":{
+    #     "camera": {
+    #         "x" :1.25,
+    #         "y" :1.25,
+    #         "z" :1.25
+    #     }
+    # },
     "legend": dict(
         orientation='h',
         x=0.5,
@@ -96,7 +120,7 @@ small_fig_layout_dict = {
             'weight': 'bold'
         }
     },
-    "margin": dict(l=0, r=0, t=50, b=0),
+    "margin": dict(l=0, r=0, t=60, b=0),
     "paper_bgcolor": "White",
     "xaxis": dict(showgrid=False, zeroline=False, visible=False),
     "yaxis": dict(showgrid=False, zeroline=False, visible=False),
