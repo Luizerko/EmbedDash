@@ -15,7 +15,7 @@ from dash import Dash, html, dcc, Input, Output, State, callback
 
 from logger import logger
 from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
-from models import train_and_predict, models
+from models import train_and_predict, generate_latent_data, models
 from utils import (
     load_mnist,
     load_mammoth,
@@ -38,12 +38,15 @@ if not os.path.exists(data_path):
     print(f'Folder "{data_path}" created.')
 dataframe_mnist_path = data_path / "mnist_data.pkl"
 dataframe_mammoth_path = data_path / "mammoth_data.pkl"
+latent_data_path = data_path / "latent_data.pkl"
 
 app = Dash(__name__)
 
 
 ####################### DATA PREPROCESSING #######################
 
+
+### MNIST Data
 if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
     df = pd.read_pickle(dataframe_mnist_path)
@@ -121,6 +124,8 @@ else:
     # Save the DataFrame to a file for future use
     df.to_pickle(dataframe_mnist_path)
 
+
+### Mammoth Data
 if dataframe_mammoth_path.exists():
     # Load the DataFrame from the file
     df_mammoth = pd.read_pickle(dataframe_mammoth_path)
@@ -141,9 +146,21 @@ else:
     
     df_mammoth.to_pickle(dataframe_mammoth_path)
 
+
+### Latent Data
+if not latent_data_path.exists():
+    df_latent = generate_latent_data()
+
+    df_latent.to_pickle(latent_data_path)
+else:
+    # Load the latent data from the file
+    df_latent = pd.read_pickle(latent_data_path)
+
+
 ########################## FIGURES ##########################
 
 
+### MNIST Data
 fig = px.scatter(
     df, x='x', y='y', color='label',
     title="TRIMAP Embedding",
@@ -169,6 +186,7 @@ tsne_fig = px.scatter(
 ).update_layout(small_fig_layout_dict)
 
 
+### Mammoth Data
 original_mammoth = px.scatter_3d(
     df_mammoth, x='x', y='y', z='z', color='label',
     title="Original Mammoth Data",
@@ -198,11 +216,34 @@ tsne_mammoth = px.scatter_3d(
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 
+### Latent Data
+fig_latent = px.scatter(
+    df_latent, x='x', y='y', color='label',
+    title="TRIMAP Embedding",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': False, 'x': False, 'y': False},
+    width=800, height=640, size_max=10
+).update_layout(fig_layout_dict)
+
+umap_fig_latent = px.scatter(
+    df_latent, x='x_umap', y='y_umap', color='label',
+    title="UMAP Embedding",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': False, 'x_umap': False, 'y_umap': False},
+    width=400, height=320
+).update_layout(small_fig_layout_dict)
+
+tsne_fig_latent = px.scatter(
+    df_latent, x='x_tsne', y='y_tsne', color='label',
+    title="T-SNE Embedding",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': False, 'x_tsne': False, 'y_tsne': False},
+    width=400, height=320
+).update_layout(small_fig_layout_dict)
+    
+
+
 ####################### APP LAYOUT #######################
-
-
-# fig_sub1 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
-# fig_sub2 = px.scatter(px.data.iris(), x='petal_length', y='petal_width', color='species').update_layout(small_fig_layout_dict)
 
 
 app.layout = html.Div([
@@ -321,6 +362,42 @@ app.layout = html.Div([
                 ], style={'flex': '1', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
                 
                 ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh', 'flex': '0 0 auto'})
+        ]),
+        
+        ### Latent Data
+        dcc.Tab(label='Latent Data', children=[
+            html.Div([
+                ### Left side of the layout
+                html.Div([
+                    dcc.Graph(
+                        id='scatter-plot-latent',
+                        figure=fig_latent,
+                        style={"height": "60%"}
+                    ),
+                ], style={'flex': '3', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justifyContent': 'flex-start', 'align-items': 'center'}),
+
+                ### Middle of the layout
+                html.Div([
+                    # Box for Plots
+                    html.Div([
+                        html.Div([
+                            dcc.Graph(
+                                id='UMAP-plot-latent',
+                                figure=umap_fig_latent,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+
+                        html.Div([
+                            dcc.Graph(
+                                id='T-SNE-plot-latent',
+                                figure=tsne_fig_latent,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80%', 'minWidth': '230px', 'justify-content': 'space-between', 'display': 'flex', 'flexDirection': 'column'}),
+                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
+            ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
         ]),
     ])
 ])
