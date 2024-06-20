@@ -150,7 +150,6 @@ else:
 ### Latent Data
 if not latent_data_path.exists():
     df_latent = generate_latent_data()
-
     df_latent.to_pickle(latent_data_path)
 else:
     # Load the latent data from the file
