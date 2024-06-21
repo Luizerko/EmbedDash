@@ -17,17 +17,6 @@ from dash import Dash, html, dcc, Input, Output, State, callback
 from logger import logger
 from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
 from models import train_and_predict, generate_latent_data, models
-from utils import (
-    load_mnist,
-    load_mammoth,
-    convert_images_to_base64,
-    compute_centroids,
-    compute_pairwise_distances,
-    objective_function,
-    compute_translations,
-    compute_translations
-)
-
 
 
 ####################### VARIABLES #######################
@@ -37,8 +26,8 @@ data_path = Path("data/")
 if not os.path.exists(data_path):
     os.makedirs(data_path)
     print(f'Folder "{data_path}" created.')
-dataframe_mnist_path = data_path / "mnist_data.pkl"
-dataframe_mammoth_path = data_path / "mammoth_data.pkl"
+dataframe_mnist_path = data_path / "mnist_param_grid_data.pkl"
+dataframe_mammoth_path = data_path / "mammoth_param_grid_data.pkl"
 latent_data_path = data_path / "latent_data.pkl"
 
 app = Dash(__name__)
@@ -50,107 +39,12 @@ app = Dash(__name__)
 ### MNIST Data
 if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
-    df = pd.read_pickle(dataframe_mnist_path)
-
-else:
-    logger.info("Downloading MNIST data...")
-    train_examples, train_labels, test_examples, test_labels = load_mnist()
-    examples = np.concatenate((train_examples, test_examples), 0)
-    base64_images = convert_images_to_base64(examples)
-    labels = np.concatenate((train_labels, test_labels))
-    indices = np.arange(len(examples))
-
-    # Getting the latent centroids and their distances
-    # In this case, since we don't have a model yet, the latent space is the data space
-    # ADD A MODEL TO MAKE THE SPACE MORE INTERESTING
-    examples = examples.reshape(examples.shape[0], -1)
-    latent_centroids = compute_centroids(examples, labels)
-    desired_distances = compute_pairwise_distances(np.array([*latent_centroids.values()]))
-
-    # Embed MNIST data for models
-    emb_mnist_trimap = trimap.TRIMAP().fit_transform(examples)
-    emb_mnist_umap = umap.UMAP().fit_transform(examples)
-    emb_mnist_pacmap = pacmap.PaCMAP(n_components=2, n_neighbors=10, MN_ratio=0.5, FP_ratio=2.0).fit_transform(examples, init='pca')
-
-    # models that might need dimensionality reduction
-    large_data = False
-    #logger.info("examples:", len(examples))
-    if len(examples) > 5000: # 5000 is an arbitrary choice
-        large_data = True
-
-    if large_data:
-        logger.info("in PCA")
-        pca = PCA(n_components=90)  # Reduce to 90 dimensions (gives 90% explained variance)
-        examples = pca.fit_transform(examples)
-
-    logger.info("in TSNE")
-    emb_mnist_tsne = TSNE(
-        n_components=2, # number of dimensions
-        perplexity=30,  # balance between local and global aspect, 30 is what they used on MNIST
-        n_iter=1000).fit_transform(examples.reshape((examples.shape[0], -1)))
-
-    # Create a DataFrame for Plotly
-    df = pd.DataFrame({
-        'x': emb_mnist_trimap[:, 0],
-        'y': emb_mnist_trimap[:, 1],
-        'x_umap': emb_mnist_umap[:, 0],
-        'y_umap': emb_mnist_umap[:, 1],
-        'x_tsne': emb_mnist_tsne[:, 0],
-        'y_tsne': emb_mnist_tsne[:, 1],
-        'x_pacmap': emb_mnist_pacmap[:, 0],
-        'y_pacmap': emb_mnist_pacmap[:, 1],
-        'label': labels,
-        'image': base64_images,
-        'index': indices
-    })
-
-    # Getting the embedding centroids and computing the correspondent translation to get move them to the latent space distance
-    df['x'] = (df['x'] - df['x'].min())/(df['x'].max() - df['x'].min())
-    df['y'] = (df['y'] - df['y'].min())/(df['y'].max() - df['y'].min())
-    trimap_centroids = compute_centroids(np.array(df[['x', 'y']]), np.array(df['label']))
-
-    # Train models and predict labels
-    # for model_name, model in models.items():
-    #     logger.info(f"Training {model_name}...")
-    #     model_predictions = train_and_predict(models[model_name], emb_mnist_trimap, labels, emb_mnist_trimap)
-    #     df[model_name] = model_predictions
-
-    optimal_positions = minimize(objective_function,
-                                 np.array([*trimap_centroids.values()]).reshape(20),
-                                 method='L-BFGS-B',
-                                 args=(desired_distances,))
-    translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
-    
-    df['x_shift'] = df['label'].map(lambda label: translations[label][0])
-    df['y_shift'] = df['label'].map(lambda label: translations[label][1])
-
-    # Save the DataFrame to a file for future use
-    df.to_pickle(dataframe_mnist_path)
-
+    df_mnist = pd.read_pickle(dataframe_mnist_path)
 
 ### Mammoth Data
 if dataframe_mammoth_path.exists():
     # Load the DataFrame from the file
     df_mammoth = pd.read_pickle(dataframe_mammoth_path)
-
-else:
-    df_mammoth = load_mammoth()
-
-    logger.info("Starting embedding computations for mammoth dataset")
-    
-    emb_mammoth_trimap = trimap.TRIMAP(n_dims=3).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
-    emb_mammoth_umap = umap.UMAP(n_components=3).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
-    logger.info("Starting t-sne")
-    emb_mammoth_tsne = TSNE(n_components=3, perplexity=30, n_iter=1000).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy())
-    emb_mammoth_pacmap = pacmap.PaCMAP(n_components=3, n_neighbors=10, MN_ratio=0.5, FP_ratio=2.0).fit_transform(df_mammoth[['x', 'y', 'z']].to_numpy(), init='pca')
-    
-    df_mammoth[['x_trimap', 'y_trimap', 'z_trimap']] = emb_mammoth_trimap
-    df_mammoth[['x_umap', 'y_umap', 'z_umap']] = emb_mammoth_umap
-    df_mammoth[['x_tsne', 'y_tsne', 'z_tsne']] = emb_mammoth_tsne
-    df_mammoth[['x_pacmap', 'y_pacmap', 'z_pacmap']] = emb_mammoth_pacmap
-    
-    df_mammoth.to_pickle(dataframe_mammoth_path)
-
 
 ### Latent Data
 if not latent_data_path.exists():
@@ -166,7 +60,7 @@ else:
 
 ### MNIST Data
 fig = px.scatter(
-    df, x='x', y='y', color='label',
+    df_mnist, x='x', y='y', color='label',
     title="TRIMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
     hover_data={'label': False, 'x': False, 'y': False, 'image': False},
@@ -174,7 +68,7 @@ fig = px.scatter(
 ).update_layout(fig_layout_dict)
 
 umap_fig = px.scatter(
-    df, x='x_umap', y='y_umap', color='label',
+    df_mnist, x='x_umap', y='y_umap', color='label',
     title="UMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
     hover_data={'label': False, 'x_umap': False, 'y_umap': False, 'image': False},
@@ -182,7 +76,7 @@ umap_fig = px.scatter(
 ).update_layout(small_fig_layout_dict)
 
 tsne_fig = px.scatter(
-    df, x='x_tsne', y='y_tsne', color='label',
+    df_mnist, x='x_tsne', y='y_tsne', color='label',
     title="T-SNE Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
     hover_data={'label': False, 'x_tsne': False, 'y_tsne': False, 'image': False},
@@ -190,7 +84,7 @@ tsne_fig = px.scatter(
 ).update_layout(small_fig_layout_dict)
 
 pacmap_fig = px.scatter(
-    df, x='x_pacmap', y='y_pacmap', color='label',
+    df_mnist, x='x_pacmap', y='y_pacmap', color='label',
     title="PaCMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
     hover_data={'label': False, 'x_pacmap': False, 'y_pacmap': False, 'image': False},
@@ -451,14 +345,14 @@ def update_plot(n_clicks, current_fig):
     if n_clicks > 0:
 
         if n_clicks%2 != 0:
-            df['x'] = df['x'] + df['x_shift']
-            df['y'] = df['y'] + df['y_shift']
+            df_mnist['x'] = df_mnist['x'] + df_mnist['x_shift']
+            df_mnist['y'] = df_mnist['y'] + df_mnist['y_shift']
         else:
-            df['x'] = df['x'] - df['x_shift']
-            df['y'] = df['y'] - df['y_shift']
+            df_mnist['x'] = df_mnist['x'] - df_mnist['x_shift']
+            df_mnist['y'] = df_mnist['y'] - df_mnist['y_shift']
 
         updated_fig = px.scatter(
-            df, x='x', y='y', color='label',
+            df_mnist, x='x', y='y', color='label',
             title="TRIMAP embeddings on MNIST",
             labels={'color': 'Digit', 'label': 'Label'},
             hover_data={'label': False, 'x': False, 'y': False, 'image': False},
