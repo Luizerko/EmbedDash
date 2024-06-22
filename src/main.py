@@ -169,11 +169,6 @@ app.layout = html.Div([
                 ### Upper row
                 html.Div([
                     html.Div([
-                        html.Div([
-                            dcc.Dropdown(
-                                options=['trimap', 'umap', 'tsne', 'pacmap'], value='trimap', placeholder='Choose a different plot', id='mnist_dd_choose_embedding'
-                            ),
-                        ]),
                         dcc.Graph(
                             id='mnist_main_plot', 
                             figure=trimap_mnist,
@@ -187,7 +182,12 @@ app.layout = html.Div([
                             html.Label('Number of Outliers:', id='title_slider_2', style={'margin-top': '20px', 'margin-bottom': '10px'}),
                             dcc.Slider(min=0, max=len(multiplicative_values)-1, value=1, step=None, marks=marks,
                             id='mnist_slider_2',
-                            )
+                            ),
+                            html.Div([], style={'height': '50px'}),
+                            html.Label('Choose the Embedding:', style={}), 
+                            dcc.Dropdown(
+                                options=['trimap', 'umap', 'tsne', 'pacmap'], value='trimap', placeholder='Choose a different plot', id='mnist_dd_choose_embedding', style={'width': '300px', 'margin-top': '10px'}
+                            ),
                         ], id='sliders_div', style={'width': '500px', 'height': '300px'}),
                     ], style={'padding': '20px', 'display': 'flex', 'flex-direction': 'row', 'border-radius': '15px', 'margin': '10px', 'justify-content': 'space-around', 'align-items': 'center', 'background': '#FFFFFF', 'width': '95%'}),
 
@@ -371,7 +371,7 @@ def update_plot(n_clicks, current_figure, dropdown_value):
 
             updated_fig = px.scatter(
                 df_mnist, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', color='label',
-                title="TRIMAP embeddings on MNIST",
+                title="TRIMAP Embedding ",
                 labels={'color': 'Digit', 'label': 'Label'},
                 hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'image': False},
                 width=800, height=640, size_max=10
@@ -391,7 +391,7 @@ def update_plot(n_clicks, current_figure, dropdown_value):
 
             updated_fig = px.scatter(
                 df_mnist, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', color='label',
-                title="UMAP embeddings on MNIST",
+                title="UMAP Embedding ",
                 labels={'color': 'Digit', 'label': 'Label'},
                 hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'image': False},
                 width=800, height=640, size_max=10
@@ -411,7 +411,7 @@ def update_plot(n_clicks, current_figure, dropdown_value):
 
             updated_fig = px.scatter(
                 df_mnist, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', color='label',
-                title="TSNE embeddings on MNIST",
+                title="TSNE Embedding",
                 labels={'color': 'Digit', 'label': 'Label'},
                 hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'image': False},
                 width=800, height=640, size_max=10
@@ -431,7 +431,7 @@ def update_plot(n_clicks, current_figure, dropdown_value):
 
             updated_fig = px.scatter(
                 df_mnist, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', color='label',
-                title="PACMAP embeddings on MNIST",
+                title="PACMAP Embedding",
                 labels={'color': 'Digit', 'label': 'Label'},
                 hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'image': False},
                 width=800, height=640, size_max=10
@@ -453,7 +453,7 @@ def sliders(slider_value_1, slider_value_2):
         trimap_nout_values=[2, 4, 8]
         updated_fig = px.scatter(
             df_mnist, x='x_trimap_nin_'+str(slider_value_1)+'_nout_'+str(trimap_nout_values[slider_value_2]), y='y_trimap_nin_'+str(slider_value_1)+'_nout_'+str(trimap_nout_values[slider_value_2]), color='label',
-            title="TRIMAP embeddings on MNIST",
+            title="TRIMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
             hover_data={'label': False, 'x_trimap_nin_'+str(slider_value_1)+'_nout_'+str(trimap_nout_values[slider_value_2]): False, 'y_trimap_nin_'+str(slider_value_1)+'_nout_'+str(trimap_nout_values[slider_value_2]): False, 'image': False},
             width=800, height=640, size_max=10
@@ -464,7 +464,7 @@ def sliders(slider_value_1, slider_value_2):
         umap_mindist_values=[0.0, 0.1, 0.5]
         updated_fig = px.scatter(
             df_mnist, x='x_umap_nneighbors_'+str(umap_nneighbors_values[slider_value_1])+'_mindist_'+str(umap_mindist_values[slider_value_2]), y='y_umap_nneighbors_'+str(umap_nneighbors_values[slider_value_1])+'_mindist_'+str(umap_mindist_values[slider_value_2]), color='label',
-            title="UMAP embeddings on MNIST",
+            title="UMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
             hover_data={'label': False, 'x_umap_nneighbors_'+str(umap_nneighbors_values[slider_value_1])+'_mindist_'+str(umap_mindist_values[slider_value_2]): False, 'y_umap_nneighbors_'+str(umap_nneighbors_values[slider_value_1])+'_mindist_'+str(umap_mindist_values[slider_value_2]): False, 'image': False},
             width=800, height=640, size_max=10
@@ -474,7 +474,7 @@ def sliders(slider_value_1, slider_value_2):
         tsne_exa_values=[6, 12, 24]
         updated_fig = px.scatter(
             df_mnist, x='x_tsne_perp_'+str(slider_value_1)+'_exa_'+str(tsne_exa_values[slider_value_2]), y='y_tsne_perp_'+str(slider_value_1)+'_exa_'+str(tsne_exa_values[slider_value_2]), color='label',
-            title="TSNE embeddings on MNIST",
+            title="TSNE Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
             hover_data={'label': False, 'x_tsne_perp_'+str(slider_value_1)+'_exa_'+str(tsne_exa_values[slider_value_2]): False, 'y_tsne_perp_'+str(slider_value_1)+'_exa_'+str(tsne_exa_values[slider_value_2]): False, 'image': False},
             width=800, height=640, size_max=10
@@ -484,10 +484,10 @@ def sliders(slider_value_1, slider_value_2):
         pacmap_nneighbors_values=[5, 10, 20]
         pacmap_init_values=['pca', 'random']
         updated_fig = px.scatter(
-            df_mnist, x='x_pacmap_nneighbors_'+str(pacmap_nneighbors_values[slider_value_1])+'_init_'+pacmap_init_values[slider_value_2], y='y_pacmap_nneighbors_'+str(pacmap_nneighbors_values[slider_value_1])+'_init_'+pacmap_nneighbors_values[slider_value_2], color='label',
-            title="PACMAP embeddings on MNIST",
+            df_mnist, x='x_pacmap_nneighbors_'+str(pacmap_nneighbors_values[slider_value_1])+'_init_'+pacmap_init_values[slider_value_2], y='y_pacmap_nneighbors_'+str(pacmap_nneighbors_values[slider_value_1])+'_init_'+pacmap_init_values[slider_value_2], color='label',
+            title="PACMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x_pacmap_nneighbors_'+str(pacmap_nneighbors_values[slider_value_1])+'_init_'+pacmap_nneighbors_values[slider_value_2]: False, 'y_pacmap_nneighbors_'+str(pacmap_nneighbors_values[slider_value_1])+'_init_'+pacmap_nneighbors_values[slider_value_2]: False, 'image': False},
+            hover_data={'label': False, 'x_pacmap_nneighbors_'+str(pacmap_nneighbors_values[slider_value_1])+'_init_'+pacmap_init_values[slider_value_2]: False, 'y_pacmap_nneighbors_'+str(pacmap_nneighbors_values[slider_value_1])+'_init_'+pacmap_init_values[slider_value_2]: False, 'image': False},
             width=800, height=640, size_max=10
         )
     
@@ -572,7 +572,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
         if dropdown_value == 'trimap':
             out_main_plot = px.scatter(
                 df_mnist, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', color='label',
-                title="TRIMAP embeddings on MNIST",
+                title="TRIMAP Embedding ",
                 labels={'color': 'Digit', 'label': 'Label'},
                 hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'image': False},
                 width=800, height=640, size_max=10
@@ -590,13 +590,18 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
                 html.Label('Number of Outliers:', id='title_slider_2', style={'margin-top': '20px', 'margin-bottom': '10px'}),
                 dcc.Slider(min=0, max=len(multiplicative_values)-1, value=1, step=None, marks=marks,
                 id='mnist_slider_2',
-                )
+                ),
+                html.Div([], style={'height': '50px'}),
+                html.Label('Choose the Embedding:', style={}), 
+                dcc.Dropdown(
+                    options=['trimap', 'umap', 'tsne', 'pacmap'], value='trimap', placeholder='Choose a different plot', id='mnist_dd_choose_embedding', style={'width': '300px', 'margin-top': '10px'}
+                ),
             ]
 
             if mnist_plot_dictionary['main'] == 'umap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', color='label',
-                    title="UMAP Embeddings",
+                    title="UMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -609,7 +614,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
             elif mnist_plot_dictionary['main'] == 'tsne':
                 out_subplot = px.scatter(
                     df_mnist, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', color='label',
-                    title="TSNE Embeddings",
+                    title="TSNE Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -622,7 +627,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
             elif mnist_plot_dictionary['main'] == 'pacmap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', color='label',
-                    title="PACMAP Embeddings",
+                    title="PACMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -653,7 +658,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
         elif dropdown_value == 'umap':
             out_main_plot = px.scatter(
                 df_mnist, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', color='label',
-                title="UMAP embeddings on MNIST",
+                title="UMAP Embedding",
                 labels={'color': 'Digit', 'label': 'Label'},
                 hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'image': False},
                 width=800, height=640, size_max=10
@@ -674,13 +679,18 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
                 html.Label('Minimum Distance:', id='title_slider_2', style={'margin-top': '20px', 'margin-bottom': '10px'}),
                 dcc.Slider(min=0, max=len(multiplicative_values_2)-1, value=1, step=None, marks=marks_2,
                 id='mnist_slider_2',
-                )
+                ),
+                html.Div([], style={'height': '50px'}),
+                html.Label('Choose the Embedding:', style={}), 
+                dcc.Dropdown(
+                    options=['trimap', 'umap', 'tsne', 'pacmap'], value='umap', placeholder='Choose a different plot', id='mnist_dd_choose_embedding', style={'width': '300px', 'margin-top': '10px'}
+                ),
             ]
 
             if mnist_plot_dictionary['main'] == 'trimap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', color='label',
-                    title="TRIMAP Embeddings",
+                    title="TRIMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -693,7 +703,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
             elif mnist_plot_dictionary['main'] == 'tsne':
                 out_subplot = px.scatter(
                     df_mnist, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', color='label',
-                    title="TSNE Embeddings",
+                    title="TSNE Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -706,7 +716,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
             elif mnist_plot_dictionary['main'] == 'pacmap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', color='label',
-                    title="PACMAP Embeddings",
+                    title="PACMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -737,7 +747,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
         elif dropdown_value == 'tsne':
             out_main_plot = px.scatter(
                 df_mnist, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', color='label',
-                title="TSNE embeddings on MNIST",
+                title="TSNE Embedding",
                 labels={'color': 'Digit', 'label': 'Label'},
                 hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'image': False},
                 width=800, height=640, size_max=10
@@ -757,13 +767,18 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
                 html.Label('Early Exagerration:', id='title_slider_2', style={'margin-top': '20px', 'margin-bottom': '10px'}),
                 dcc.Slider(min=0, max=len(multiplicative_values)-1, value=1, step=None, marks=marks,
                 id='mnist_slider_2',
-                )
+                ),
+                html.Div([], style={'height': '50px'}),
+                html.Label('Choose the Embedding:', style={}), 
+                dcc.Dropdown(
+                    options=['trimap', 'umap', 'tsne', 'pacmap'], value='tsne', placeholder='Choose a different plot', id='mnist_dd_choose_embedding', style={'width': '300px', 'margin-top': '10px'}
+                ),
             ]
 
             if mnist_plot_dictionary['main'] == 'trimap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', color='label',
-                    title="TRIMAP Embeddings",
+                    title="TRIMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -776,7 +791,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
             elif mnist_plot_dictionary['main'] == 'umap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', color='label',
-                    title="UMAP Embeddings",
+                    title="UMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -789,7 +804,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
             elif mnist_plot_dictionary['main'] == 'pacmap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', color='label',
-                    title="PACMAP Embeddings",
+                    title="PACMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -820,7 +835,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
         elif dropdown_value == 'pacmap':
             out_main_plot = px.scatter(
                 df_mnist, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', color='label',
-                title="PACMAP embeddings on MNIST",
+                title="PACMAP Embedding",
                 labels={'color': 'Digit', 'label': 'Label'},
                 hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'image': False},
                 width=800, height=640, size_max=10
@@ -841,13 +856,18 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
                 html.Label('Initialization:', id='title_slider_2', style={'margin-top': '20px', 'margin-bottom': '10px'}),
                 dcc.Slider(min=0, max=len(multiplicative_values_2)-1, value=0, step=None, marks=marks_2,
                 id='mnist_slider_2',
-                )
+                ),
+                html.Div([], style={'height': '50px'}),
+                html.Label('Choose the Embedding:', style={}), 
+                dcc.Dropdown(
+                    options=['trimap', 'umap', 'tsne', 'pacmap'], value='pacmap', placeholder='Choose a different plot', id='mnist_dd_choose_embedding', style={'width': '300px', 'margin-top': '10px'}
+                ),
             ]
 
             if mnist_plot_dictionary['main'] == 'trimap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', color='label',
-                    title="TRIMAP Embeddings",
+                    title="TRIMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -860,7 +880,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
             elif mnist_plot_dictionary['main'] == 'umap':
                 out_subplot = px.scatter(
                     df_mnist, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', color='label',
-                    title="UMAP Embeddings",
+                    title="UMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'image': False},
                     width=400, height=320, size_max=10
@@ -873,7 +893,7 @@ def switch_main_img(dropdown_value, in_main_plot, in_subplot_1, in_subplot_2, in
             elif mnist_plot_dictionary['main'] == 'tsne':
                 out_subplot = px.scatter(
                     df_mnist, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', color='label',
-                    title="TSNE Embeddings",
+                    title="TSNE Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'image': False},
                     width=400, height=320, size_max=10
