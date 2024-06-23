@@ -11,6 +11,8 @@ fig_layout_dict = {
             'weight': 'bold'
         }
     },
+    "width": 800,
+    "height": 640,
     "margin": dict(l=20, r=20, t=70, b=20),
     "paper_bgcolor": "White",
     "xaxis": dict(showgrid=False, zeroline=False, visible=False),
@@ -106,7 +108,6 @@ fig_layout_dict_mammoth = {
     "coloraxis_showscale": False
 }
 
-
 small_fig_layout_dict = {
     "title": {
         'y': 0.95,
@@ -120,6 +121,8 @@ small_fig_layout_dict = {
             'weight': 'bold'
         }
     },
+    "width": 400,
+    "height": 320,
     "margin": dict(l=0, r=0, t=60, b=0),
     "paper_bgcolor": "White",
     "xaxis": dict(showgrid=False, zeroline=False, visible=False),

@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 from sklearn.manifold import TSNE
 
-from keras.api.utils import to_categorical
-from keras.api.datasets import cifar10
-from keras.api.layers import Flatten, Dense
-from keras.api.models import Sequential
-from keras.api.applications import EfficientNetV2L
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.layers import Flatten, Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.applications import EfficientNetV2L
 
 
 def train_and_predict(model, X_train, y_train, X_test):

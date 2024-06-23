@@ -2,6 +2,10 @@ import numpy as np
 from scipy.optimize import minimize
 from sklearn.metrics.pairwise import pairwise_distances
 
+import plotly.express as px
+import plotly.graph_objects as go
+from layouts import fig_layout_dict, small_fig_layout_dict
+
 
 # Compute centroids for different clusters of data
 def compute_centroids(data, labels):
@@ -88,3 +92,82 @@ def shortest_distance(point, a, b, c):
     # Calculate the Euclidean distance
     distance = np.sqrt((x_closest - x0) ** 2 + (y_closest - y0) ** 2)
     return distance
+
+
+def make_mnist_figure(df, version, index=False, is_subplot=False):
+
+    main_type = version.split('_')[0]
+
+    if main_type == "trimap":
+        updated_fig = px.scatter(
+            df, x='x_'+version, y='y_'+version, color='label',
+            title="TRIMAP Embedding ",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            width=800, height=640, size_max=10
+        )
+        
+    elif main_type == "umap":
+        updated_fig = px.scatter(
+            df, x='x_'+version, y='y_'+version, color='label',
+            title="UMAP Embedding ",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            width=800, height=640, size_max=10
+        )
+        
+    elif main_type == "tsne":
+        updated_fig = px.scatter(
+            df, x='x_'+version, y='y_'+version, color='label',
+            title="TSNE Embedding ",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            width=800, height=640, size_max=10
+        )
+
+    elif main_type == "pacmap":
+        updated_fig = px.scatter(
+            df, x='x_'+version, y='y_'+version, color='label',
+            title="PACMAP Embedding ",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            width=800, height=640, size_max=10
+        )
+    
+    # if no point is highlighted, return the figure
+
+    if not index:
+
+        if is_subplot:
+            updated_fig.update_layout(small_fig_layout_dict)
+        else:
+            updated_fig.update_layout(fig_layout_dict)
+            
+        return updated_fig
+
+    # if a point is highlighted, highlight that point
+    df_row = df[df['index'] == index]
+    x = float(df_row['x_'+version])
+    y = float(df_row['y_'+version])
+    
+    marker = go.Scattergl(
+        x=[x], y=[y],
+        mode='markers',
+        marker=dict(
+            size=12,
+            color='rgba(255, 0, 0, 1)',
+            symbol='diamond-open',
+            line=dict(color='rgba(255, 0, 0, 1)', width=2)
+        ),
+        name='hover_marker',
+        showlegend=False
+    )
+
+    updated_fig.add_trace(marker)
+
+    if is_subplot:
+        updated_fig.update_layout(small_fig_layout_dict)
+    else:
+        updated_fig.update_layout(fig_layout_dict)
+    
+    return updated_fig
