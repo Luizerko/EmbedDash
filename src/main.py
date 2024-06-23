@@ -88,7 +88,7 @@ tsne_mnist = px.scatter(
 
 pacmap_mnist = px.scatter(
                     df_mnist, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', color='label',
-                    title="PaCMAP Embedding",
+                    title="PACMAP Embedding",
                     labels={'color': 'Digit', 'label': 'Label'},
                     hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'image': False},
                     width=400, height=320
@@ -100,62 +100,71 @@ original_mammoth = px.scatter_3d(
     df_mammoth, x='x', y='y', z='z', color='label',
     title="Original Mammoth Data",
     hover_data={'label': False, 'x': False, 'y': False, 'z': False},
-    width=700, height=520
+    width=600, height=480
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 trimap_mammoth = px.scatter_3d(
     df_mammoth, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', z='z_trimap_nin_12_nout_4', color='label',
-    title="TriMap Embedding",
+    title="TRIMAP Embedding",
     hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'z_trimap_nin_12_nout_4': False},
-    width=700, height=520
+    width=600, height=480
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 umap_mammoth = px.scatter_3d(
     df_mammoth, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', z='z_umap_nneighbors_15_mindist_0.1', color='label',
     title="UMAP Embedding",
     hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'z_umap_nneighbors_15_mindist_0.1': False},
-    width=500, height=420
+    width=600, height=480
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 tsne_mammoth = px.scatter_3d(
     df_mammoth, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', z='z_tsne_perp_30_exa_12', color='label',
-    title="t-SNE Embedding",
+    title="T-SNE Embedding",
     hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'z_tsne_perp_30_exa_12': False},
-    width=500, height=420
+    width=600, height=480
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 pacmap_mammoth = px.scatter_3d(
     df_mammoth, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', z='z_pacmap_nneighbors_10_init_pca', color='label',
-    title="PaCMAP Embedding",
+    title="PACMAP Embedding",
     hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'z_pacmap_nneighbors_10_init_pca': False},
-    width=500, height=420
+    width=600, height=480
 ).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
 
 
 ### Latent Data
-fig_latent = px.scatter(
+trimap_latent = px.scatter(
     df_latent, x='x', y='y', color='label',
     title="TRIMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
     hover_data={'label': False, 'x': False, 'y': False},
-    width=800, height=640, size_max=10
+    width=700, height=480, size_max=10
 ).update_layout(fig_layout_dict)
 
-umap_fig_latent = px.scatter(
+umap_latent = px.scatter(
     df_latent, x='x_umap', y='y_umap', color='label',
     title="UMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
     hover_data={'label': False, 'x_umap': False, 'y_umap': False},
-    width=400, height=320
-).update_layout(small_fig_layout_dict)
+    width=700, height=480
+).update_layout(fig_layout_dict)
 
-tsne_fig_latent = px.scatter(
+tsne_latent = px.scatter(
     df_latent, x='x_tsne', y='y_tsne', color='label',
     title="T-SNE Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
     hover_data={'label': False, 'x_tsne': False, 'y_tsne': False},
-    width=400, height=320
-).update_layout(small_fig_layout_dict)
+    width=700, height=480
+).update_layout(fig_layout_dict)
+
+# CHANGE IT TO THE PACMAP DATA
+pacmap_latent = px.scatter(
+    df_latent, x='x_tsne', y='y_tsne', color='label',
+    title="PACMAP Embedding",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': False, 'x_tsne': False, 'y_tsne': False},
+    width=700, height=480
+).update_layout(fig_layout_dict)
 
 ####################### APP LAYOUT #######################
 
@@ -219,7 +228,7 @@ app.layout = html.Div([
 
                     ], style={'padding': '20px', 'display': 'flex', 'flex-direction': 'row', 'border-radius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '95%', 'justify-content': 'space-around', 'align-items': 'flex-start'}),
 
-                ], style={'display': 'flex', 'padding': '20px', 'flex-direction': 'row', 'flex-wrap': 'wrap', 'width': '80vw'}),
+                ], style={'display': 'flex', 'flex-direction': 'row', 'flex-wrap': 'wrap', 'width': '85vw'}),
 
                 ### Right column
                 html.Div([
@@ -252,7 +261,42 @@ app.layout = html.Div([
 
         dcc.Tab(label='Mammoth Data', children=[
             html.Div([
-                #Upper row
+                #Left grid
+                html.Div([
+                        html.Div([
+                            dcc.Graph(
+                                id='mammoth_trimap_plot',
+                                figure=trimap_mammoth,
+                                style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}
+                                )
+                        ]),
+                        html.Div([
+                            dcc.Graph(
+                                id='mammoth_umap_plot',
+                                figure=umap_mammoth,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ]),
+
+                        html.Div([
+                            dcc.Graph(
+                                id='mammoth_tsne_plot',
+                                figure=tsne_mammoth,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ]),
+
+                        html.Div([
+                            dcc.Graph(
+                                id='mammoth_pacmap_plot',
+                                figure=pacmap_mammoth,
+                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                            ),
+                        ]),
+
+                ], style={'padding': '20px', 'display': 'flex', 'flexDirection': 'row', 'flex-wrap': 'wrap', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '65%', 'height': '100%', 'justify-content': 'space-around', 'align-items': 'flex-start'}),
+                
+                #Right column
                 html.Div([
                     html.Div([
                         dcc.Graph(
@@ -261,84 +305,50 @@ app.layout = html.Div([
                         style={}
                         )
                     ]),
-                    html.Div([
-                        dcc.Graph(
-                            id='mammoth_trimap_plot',
-                            figure=trimap_mammoth,
-                            style={}
-                        )
-                    ]),
-                    html.Div([
-                        html.Button('PARAMETERS GO HERE', id='placeholdedr-button2', n_clicks=0)
-                    ]),
-
-                ], style={'padding': '20px', 'display': 'flex', 'flexDirection': 'row', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '95%', 'justify-content': 'space-around', 'align-items': 'center'}),
-
-                #Lower row
+                ], style={'padding': '20px', 'display': 'flex', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '30%', 'justify-content': 'center', 'align-items': 'center', 'height': '40%'}),
+                
+            ], style={"display": "flex", "flexDirection": "column", 'flex-wrap': 'wrap', "padding": "20px", "background": "#E5F6FD", 'height': '90vh', 'justify-content': 'center'})
+        ]),
+        
+        ### Latent Data
+        dcc.Tab(label='CIFAR Data in Latent Space', children=[
+            html.Div([
+                ### Left grid
                 html.Div([
                         html.Div([
                             dcc.Graph(
+                                id='mammoth_trimap_plot',
+                                figure=trimap_latent,
+                                style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}
+                                )
+                        ]),
+                        html.Div([
+                            dcc.Graph(
                                 id='mammoth_umap_plot',
-                                figure=umap_mammoth,
+                                figure=umap_latent,
                                 style={"width": "100%", "display": "inline-block", 'height': '300px'}
                             ),
-                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+                        ]),
 
                         html.Div([
                             dcc.Graph(
                                 id='mammoth_tsne_plot',
-                                figure=tsne_mammoth,
+                                figure=tsne_latent,
                                 style={"width": "100%", "display": "inline-block", 'height': '300px'}
                             ),
-                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+                        ]),
 
                         html.Div([
                             dcc.Graph(
                                 id='mammoth_pacmap_plot',
-                                figure=pacmap_mammoth,
+                                figure=pacmap_latent,
                                 style={"width": "100%", "display": "inline-block", 'height': '300px'}
                             ),
-                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+                        ]),
 
-                ], style={'padding': '20px', 'display': 'flex', 'flexDirection': 'row', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '95%', 'justify-content': 'space-around', 'align-items': 'flex-start'}),
-                
-                ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'flex-wrap': 'wrap', 'height': '90vh'})
-        ]),
-        
-        ### Latent Data
-        dcc.Tab(label='Latent Data', children=[
-            html.Div([
-                ### Left side of the layout
-                html.Div([
-                    dcc.Graph(
-                        id='scatter-plot-latent',
-                        figure=fig_latent,
-                        style={"height": "60%"}
-                    ),
-                ], style={'flex': '3', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justifyContent': 'flex-start', 'align-items': 'center'}),
+                ], style={'padding': '20px', 'display': 'flex', 'flexDirection': 'row', 'flex-wrap': 'wrap', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '90%', 'height': '100%', 'justify-content': 'space-around', 'align-items': 'flex-start'}),
 
-                ### Middle of the layout
-                html.Div([
-                    # Box for Plots
-                    html.Div([
-                        html.Div([
-                            dcc.Graph(
-                                id='UMAP-plot-latent',
-                                figure=umap_fig_latent,
-                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
-                            ),
-                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
-
-                        html.Div([
-                            dcc.Graph(
-                                id='T-SNE-plot-latent',
-                                figure=tsne_fig_latent,
-                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
-                            ),
-                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
-                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80%', 'minWidth': '230px', 'justify-content': 'space-between', 'display': 'flex', 'flexDirection': 'column'}),
-                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
-            ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
+            ], style={"display": "flex", "flexDirection": "column", 'flex-wrap': 'wrap', "padding": "20px", "background": "#E5F6FD", 'height': '90vh', 'justify-content': 'center', 'align-items': 'center'})
         ]),
     ])
 ])
