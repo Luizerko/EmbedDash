@@ -97,6 +97,7 @@ def shortest_distance(point, a, b, c):
 def make_mnist_figure(df, version, index=False, is_subplot=False):
 
     main_type = version.split('_')[0]
+    category_order = sorted(df['label'].unique())
 
     if main_type == "trimap":
         updated_fig = px.scatter(
@@ -104,7 +105,8 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
             title="TRIMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
             hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
-            width=800, height=640, size_max=10
+            width=800, height=640, size_max=10,
+            category_orders={'label': category_order}
         )
         
     elif main_type == "umap":
@@ -113,7 +115,8 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
             title="UMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
             hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
-            width=800, height=640, size_max=10
+            width=800, height=640, size_max=10,
+            category_orders={'label': category_order}
         )
         
     elif main_type == "tsne":
@@ -122,7 +125,8 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
             title="TSNE Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
             hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
-            width=800, height=640, size_max=10
+            width=800, height=640, size_max=10,
+            category_orders={'label': category_order}
         )
 
     elif main_type == "pacmap":
@@ -131,7 +135,8 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
             title="PACMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
             hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
-            width=800, height=640, size_max=10
+            width=800, height=640, size_max=10,
+            category_orders={'label': category_order}
         )
     
     # if no point is highlighted, return the figure
@@ -154,10 +159,10 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
         x=[x], y=[y],
         mode='markers',
         marker=dict(
-            size=12,
-            color='rgba(255, 0, 0, 1)',
+            size=20,
+            color='rgba(0, 0, 0, 1)',
             symbol='diamond-open',
-            line=dict(color='rgba(255, 0, 0, 1)', width=2)
+            line=dict(color='rgba(0,0,0,1)', width=3)
         ),
         name='hover_marker',
         showlegend=False

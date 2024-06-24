@@ -45,6 +45,10 @@ if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
     df_mnist = pd.read_pickle(dataframe_mnist_path)
 
+    df_mnist['label'] = df_mnist['label'].astype('category')
+    df_mnist['label'] = df_mnist['label'].cat.set_categories(sorted(df_mnist['label'].unique()))
+
+
 ### Mammoth Data
 if dataframe_mammoth_path.exists():
     # Load the DataFrame from the file
@@ -65,37 +69,13 @@ mnist_embedding_dictionary = {'trimap': 'main', 'umap': 'subplot_1', 'tsne': 'su
 
 
 ### MNIST Data
-trimap_mnist = px.scatter(
-                    df_mnist, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', color='label',
-                    title="TRIMAP Embedding",
-                    labels={'color': 'Digit', 'label': 'Label'},
-                    hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'image': False, 'index': False},
-                    width=800, height=640, size_max=10
-                ).update_layout(fig_layout_dict)
+trimap_mnist = make_mnist_figure(df_mnist, 'trimap_nin_12_nout_4')
 
-umap_mnist = px.scatter(
-                    df_mnist, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', color='label',
-                    title="UMAP Embedding",
-                    labels={'color': 'Digit', 'label': 'Label'},
-                    hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'image': False, 'index': False},
-                    width=400, height=320
-                ).update_layout(small_fig_layout_dict)
+umap_mnist = make_mnist_figure(df_mnist, 'umap_nneighbors_15_mindist_0.1', is_subplot=True)
 
-tsne_mnist = px.scatter(
-                    df_mnist, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', color='label',
-                    title="T-SNE Embedding",
-                    labels={'color': 'Digit', 'label': 'Label'},
-                    hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'image': False, 'index': False},
-                    width=400, height=320
-                ).update_layout(small_fig_layout_dict)
+tsne_mnist = make_mnist_figure(df_mnist, 'tsne_perp_30_exa_12', is_subplot=True)
 
-pacmap_mnist = px.scatter(
-                    df_mnist, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', color='label',
-                    title="PaCMAP Embedding",
-                    labels={'color': 'Digit', 'label': 'Label'},
-                    hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'image': False, 'index': False},
-                    width=400, height=320
-                ).update_layout(small_fig_layout_dict)
+pacmap_mnist = make_mnist_figure(df_mnist, 'pacmap_nneighbors_10_init_pca', is_subplot=True)
 
 
 ### Mammoth Data
@@ -533,11 +513,10 @@ def display_hover_image(MainhoverData, Sub1hoverData, Sub2hoverData, Sub3hoverDa
      Input('mnist_subplot_1', 'clickData'),
      Input('mnist_subplot_2', 'clickData'),
      Input('mnist_subplot_3', 'clickData')],
-    [State('version_parameters', 'data'),
-     State('mnist_dd_choose_embedding', 'value')],
+    [State('version_parameters', 'data')],
     prevent_initial_call=True
 )
-def display_click_image(MainclickData, Sub1clickData, Sub2clickData, Sub3clickData, version_parameters, current_main):
+def display_click_image(MainclickData, Sub1clickData, Sub2clickData, Sub3clickData, version_parameters):
     clickData = None
     inputs = [MainclickData, Sub1clickData, Sub2clickData, Sub3clickData]
     for inp in inputs:
@@ -557,37 +536,48 @@ def display_click_image(MainclickData, Sub1clickData, Sub2clickData, Sub3clickDa
     tsne_base_version = version_parameters[2]
     pacmap_base_version = version_parameters[3]
 
-    logger.info(original_index)
+    for location, embedding in mnist_plot_dictionary.items():
+        if location == 'main':
+            if embedding == 'trimap':
+                main_img = make_mnist_figure(df_mnist, trimap_base_version, index=original_index, is_subplot=False)
+            elif embedding == 'umap':
+                main_img = make_mnist_figure(df_mnist, umap_base_version, index=original_index, is_subplot=False)
+            elif embedding == 'tsne':
+                main_img = make_mnist_figure(df_mnist, tsne_base_version, index=original_index, is_subplot=False)
+            elif embedding == 'pacmap':
+                main_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=False)
 
-    # we need to keep track of where what is exactly because it does not keep place.
-    # use mnist_embedding_dictionary?
-    if current_main == 'trimap':
-        main_img = make_mnist_figure(df_mnist, trimap_base_version, index=original_index, is_subplot=False)
-        sub1_img = make_mnist_figure(df_mnist, umap_base_version, index=original_index, is_subplot=True)
-        sub2_img = make_mnist_figure(df_mnist, tsne_base_version, index=original_index, is_subplot=True)
-        sub3_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=True)
+        elif location == 'subplot_1':
+            if embedding == 'trimap':
+                sub1_img = make_mnist_figure(df_mnist, trimap_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'umap':
+                sub1_img = make_mnist_figure(df_mnist, umap_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'tsne':
+                sub1_img = make_mnist_figure(df_mnist, tsne_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'pacmap':
+                sub1_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=True)
         
-    elif current_main == 'umap':
-        main_img = make_mnist_figure(df_mnist, umap_base_version, index=original_index, is_subplot=False)
-        sub1_img = make_mnist_figure(df_mnist, trimap_base_version, index=original_index, is_subplot=True)
-        sub2_img = make_mnist_figure(df_mnist, tsne_base_version, index=original_index, is_subplot=True)
-        sub3_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=True)
-    
-    elif current_main == 'tsne':
-        main_img = make_mnist_figure(df_mnist, tsne_base_version, index=original_index, is_subplot=False)
-        sub1_img = make_mnist_figure(df_mnist, trimap_base_version, index=original_index, is_subplot=True)
-        sub2_img = make_mnist_figure(df_mnist, umap_base_version, index=original_index, is_subplot=True)
-        sub3_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=True)
-    
-    elif current_main == 'pacmap':
-        main_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=False)
-        sub1_img = make_mnist_figure(df_mnist, umap_base_version, index=original_index, is_subplot=True)
-        sub2_img = make_mnist_figure(df_mnist, tsne_base_version, index=original_index, is_subplot=True)
-        sub3_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=True)
-    else:
-        logger.info('should not be here')
+        elif location == 'subplot_2':
+            if embedding == 'trimap':
+                sub2_img = make_mnist_figure(df_mnist, trimap_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'umap':
+                sub2_img = make_mnist_figure(df_mnist, umap_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'tsne':
+                sub2_img = make_mnist_figure(df_mnist, tsne_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'pacmap':
+                sub2_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=True)
         
-    return original_image, f'Label: {original_label}, {version_parameters}', original_index, main_img, sub1_img, sub2_img, sub3_img
+        elif location == 'subplot_3':
+            if embedding == 'trimap':
+                sub3_img = make_mnist_figure(df_mnist, trimap_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'umap':
+                sub3_img = make_mnist_figure(df_mnist, umap_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'tsne':
+                sub3_img = make_mnist_figure(df_mnist, tsne_base_version, index=original_index, is_subplot=True)
+            elif embedding == 'pacmap':
+                sub3_img = make_mnist_figure(df_mnist, pacmap_base_version, index=original_index, is_subplot=True)
+        
+    return original_image, f'Label: {original_label}', original_index, main_img, sub1_img, sub2_img, sub3_img
 
 
 @app.callback(
