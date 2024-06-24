@@ -12,7 +12,7 @@ from dash import Dash, html, dcc, Input, Output, State, callback, no_update
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
-from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
+from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth, fig_layout_dict_latent
 from models import generate_latent_data
 
 from utils import make_mnist_figure, make_mammoth_figure, make_latent_figure
@@ -40,9 +40,6 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 if dataframe_mnist_path.exists():
     # Load the DataFrame from the file
     df_mnist = pd.read_pickle(dataframe_mnist_path)
-    df_mnist['label'] = df_mnist['label'].astype('category')
-    df_mnist['label'] = df_mnist['label'].cat.set_categories(sorted(df_mnist['label'].unique()))
-
     df_mnist['label'] = df_mnist['label'].astype('category')
     df_mnist['label'] = df_mnist['label'].cat.set_categories(sorted(df_mnist['label'].unique()))
 
@@ -100,7 +97,7 @@ umap_latent = make_latent_figure(df_latent, 'umap')
 
 tsne_latent = make_latent_figure(df_latent, 'tsne')
 
-pacmap_latent = make_latent_figure(df_latent, 'pacmap', index=1)
+pacmap_latent = make_latent_figure(df_latent, 'pacmap')
 
 
 ####################### APP LAYOUT #######################
@@ -229,6 +226,7 @@ app.layout = html.Div([
                 html.Div([
                     #Left grid
                     html.Div([
+                        dcc.Store(id='clicked-index-mammoth', storage_type='local', data=None),
                         html.Div([
                             dcc.Graph(
                                 id='mammoth_trimap_plot',
@@ -340,6 +338,7 @@ app.layout = html.Div([
 
                     # Box for images
                     html.Div([
+                        dcc.Store(id='clicked-index-latent', storage_type='local', data=None),
                         html.H3("Hover Sample", style={'text-align': 'center', 'font-weight': 'bold', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
                         
                         html.Div([
@@ -503,6 +502,36 @@ def sliders(slider_value_1, slider_value_2, version_parameters, clicked_index):
 #     return updated_fig
 
 @callback(
+    [Output('hover-image-latent', 'src'),
+     Output('hover-index-latent', 'children'),
+     Output('latent_trimap_plot', 'hoverData'),
+     Output('latent_umap_plot', 'hoverData'),
+     Output('latent_tsne_plot', 'hoverData'),
+     Output('latent_pacmap_plot', 'hoverData')],
+    [Input('latent_trimap_plot', 'hoverData'),
+     Input('latent_umap_plot', 'hoverData'),
+     Input('latent_tsne_plot', 'hoverData'),
+     Input('latent_pacmap_plot', 'hoverData')]
+)
+def display_hover_image_mnist(MainhoverData, Sub1hoverData, Sub2hoverData, Sub3hoverData):
+    
+    # if you are hovering over any of the input images, get that hoverData
+    hoverData = None
+    inputs = [MainhoverData, Sub1hoverData, Sub2hoverData, Sub3hoverData]
+    for inp in inputs:
+        if inp is not None:
+            hoverData = inp
+            break
+    
+    if hoverData is None:
+        return '', '', None, None, None, None
+
+    original_label = hoverData['points'][0]['customdata'][0]
+    original_image = hoverData['points'][0]['customdata'][1]
+
+    return original_image, f'Label: {original_label}', None, None, None, None
+
+@callback(
     [Output('hover-image-mnist', 'src'),
      Output('hover-index-mnist', 'children'),
      Output('mnist_main_plot', 'hoverData'),
@@ -515,7 +544,7 @@ def sliders(slider_value_1, slider_value_2, version_parameters, clicked_index):
      Input('mnist_subplot_3', 'hoverData')]
 
 )
-def display_hover_image(MainhoverData, Sub1hoverData, Sub2hoverData, Sub3hoverData):
+def display_hover_image_latent(MainhoverData, Sub1hoverData, Sub2hoverData, Sub3hoverData):
     
     # if you are hovering over any of the input images, get that hoverData
     hoverData = None
@@ -534,6 +563,7 @@ def display_hover_image(MainhoverData, Sub1hoverData, Sub2hoverData, Sub3hoverDa
     return original_image, f'Label: {original_label}', None, None, None, None
 
 
+
 @callback(
     [Output('click-image-mnist', 'src'),
      Output('click-index-mnist', 'children'),
@@ -549,7 +579,7 @@ def display_hover_image(MainhoverData, Sub1hoverData, Sub2hoverData, Sub3hoverDa
     [State('version_parameters', 'data')],
     prevent_initial_call=True
 )
-def display_click_image(MainclickData, Sub1clickData, Sub2clickData, Sub3clickData, version_parameters):
+def display_click_image_mnist(MainclickData, Sub1clickData, Sub2clickData, Sub3clickData, version_parameters):
     clickData = None
     inputs = [MainclickData, Sub1clickData, Sub2clickData, Sub3clickData]
     for inp in inputs:
@@ -612,6 +642,78 @@ def display_click_image(MainclickData, Sub1clickData, Sub2clickData, Sub3clickDa
         
     return original_image, f'Label: {original_label}', original_index, main_img, sub1_img, sub2_img, sub3_img
 
+
+@callback(
+    [Output('click-image-latent', 'src'),
+     Output('click-index-latent', 'children'),
+     Output('clicked-index-latent', 'data'),
+     Output('latent_trimap_plot', 'figure', allow_duplicate=True),
+     Output('latent_umap_plot', 'figure', allow_duplicate=True),
+     Output('latent_tsne_plot', 'figure', allow_duplicate=True),
+     Output('latent_pacmap_plot', 'figure', allow_duplicate=True)],
+    [Input('latent_trimap_plot', 'clickData'),
+     Input('latent_umap_plot', 'clickData'),
+     Input('latent_tsne_plot', 'clickData'),
+     Input('latent_pacmap_plot', 'clickData')],
+    prevent_initial_call=True
+)
+def display_click_image_latent(trimapClickData, umapClickData, tsneClickData, pacmapClickData):
+    clickData = None
+    inputs = [trimapClickData, umapClickData, tsneClickData, pacmapClickData]
+    for inp in inputs:
+        if inp is not None:
+            clickData = inp
+            break
+
+    if clickData is None:
+        raise PreventUpdate
+
+    original_label = clickData['points'][0]['customdata'][0]
+    original_image = clickData['points'][0]['customdata'][1]
+    original_index = clickData['points'][0]['customdata'][2]
+
+    trimap_img = make_latent_figure(df_latent, 'trimap', index=original_index)
+    umap_img = make_latent_figure(df_latent, 'umap', index=original_index)
+    tsne_img = make_latent_figure(df_latent, 'tsne', index=original_index)
+    pacmap_img = make_latent_figure(df_latent, 'pacmap', index=original_index)
+
+    return original_image, f'Label: {original_label, original_index}', original_index, trimap_img, umap_img, tsne_img, pacmap_img
+
+@callback(
+    [Output('clicked-index-mammoth', 'data'),
+     Output('mammoth_original_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_trimap_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_umap_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_tsne_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_pacmap_plot', 'figure', allow_duplicate=True)],
+    [Input('mammoth_original_plot', 'clickData'),
+     Input('mammoth_trimap_plot', 'clickData'),
+     Input('mammoth_umap_plot', 'clickData'),
+     Input('mammoth_tsne_plot', 'clickData'),
+     Input('mammoth_pacmap_plot', 'clickData')],
+    prevent_initial_call=True
+)
+def display_click_mammoth(originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData):
+    clickData = None
+    inputs = [originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData]
+    for inp in inputs:
+        if inp is not None:
+            clickData = inp
+            break
+
+    if clickData is None:
+        raise PreventUpdate
+
+    original_index = clickData['points'][0]['customdata'][1]
+
+    original_img = make_mammoth_figure(df_mammoth, 'original', index=original_index)
+    trimap_img = make_mammoth_figure(df_mammoth, 'trimap_nin_12_nout_4', index=original_index)
+    umap_img = make_mammoth_figure(df_mammoth, 'umap_nneighbors_15_mindist_0.1', index=original_index)
+    tsne_img = make_mammoth_figure(df_mammoth, 'tsne_perp_30_exa_12', index=original_index)
+    pacmap_img = make_mammoth_figure(df_mammoth, 'pacmap_nneighbors_10_init_pca', index=original_index)
+
+
+    return original_index, original_img, trimap_img, umap_img, tsne_img, pacmap_img
     
 
 @app.callback(
