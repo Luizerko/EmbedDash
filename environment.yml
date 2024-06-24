@@ -14,3 +14,5 @@ dependencies:
       - scipy==1.13.1
       - tensorflow==2.16.1
       - trimap==1.1.4
+      - pacmap==0.7.3
+      - umap-learn==0.5.6
