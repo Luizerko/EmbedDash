@@ -16,7 +16,7 @@ from dash import Dash, html, dcc, Input, Output, State, callback
 
 from logger import logger
 from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
-from models import train_and_predict, generate_latent_data, models
+from models import generate_latent_data
 from utils import (
     load_mnist,
     load_mammoth,
@@ -259,7 +259,15 @@ tsne_fig_latent = px.scatter(
     hover_data={'label': False, 'x_tsne': False, 'y_tsne': False},
     width=400, height=320
 ).update_layout(small_fig_layout_dict)
-    
+
+
+pacmap_fig_latent = px.scatter(
+    df_latent, x='x_pacmap', y='y_pacmap', color='label',
+    title="PaCMAP Embedding",
+    labels={'color': 'Digit', 'label': 'Label'},
+    hover_data={'label': False, 'x_pacmap': False, 'y_pacmap': False, 'image': False},
+    width=400, height=320
+).update_layout(small_fig_layout_dict)
 
 
 ####################### APP LAYOUT #######################
@@ -267,6 +275,8 @@ tsne_fig_latent = px.scatter(
 
 app.layout = html.Div([
     dcc.Tabs([
+
+        ### MNIST Data
         dcc.Tab(label='MNIST Data', children=[
             html.Div([
                 ### Upper row
@@ -341,6 +351,7 @@ app.layout = html.Div([
             ], style={"display": "flex", 'flex-wrap': 'nowrap', "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '90vh'})
         ]),
 
+        ### Mammoth Data
         dcc.Tab(label='Mammoth Data', children=[
             html.Div([
                 #Upper row
@@ -399,37 +410,45 @@ app.layout = html.Div([
         ### Latent Data
         dcc.Tab(label='Latent Data', children=[
             html.Div([
-                ### Left side of the layout
+                # Upper row
                 html.Div([
-                    dcc.Graph(
-                        id='scatter-plot-latent',
-                        figure=fig_latent,
-                        style={"height": "60%"}
-                    ),
-                ], style={'flex': '3', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justifyContent': 'flex-start', 'align-items': 'center'}),
-
-                ### Middle of the layout
-                html.Div([
-                    # Box for Plots
                     html.Div([
-                        html.Div([
-                            dcc.Graph(
-                                id='UMAP-plot-latent',
-                                figure=umap_fig_latent,
-                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
-                            ),
-                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+                        dcc.Graph(
+                            id='scatter-plot-latent',
+                            figure=fig_latent,
+                            style={}
+                        )
+                    ]),
+                ], style={'padding': '20px', 'display': 'flex', 'flexDirection': 'row', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '95%', 'justify-content': 'space-around', 'align-items': 'center'}),
 
-                        html.Div([
-                            dcc.Graph(
-                                id='T-SNE-plot-latent',
-                                figure=tsne_fig_latent,
-                                style={"width": "100%", "display": "inline-block", 'height': '300px'}
-                            ),
-                        ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
-                    ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80%', 'minWidth': '230px', 'justify-content': 'space-between', 'display': 'flex', 'flexDirection': 'column'}),
-                ], style={'flex': '2', 'padding': '20px', 'display': 'flex', 'flexDirection': 'column', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'height': '80vh', 'justify-content': 'flex-start', 'align-items': 'center'}),
-            ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'height': '100vh'})
+                # Lower row
+                html.Div([
+                    html.Div([
+                        dcc.Graph(
+                            id='UMAP-plot-latent',
+                            figure=umap_fig_latent,
+                            style={}
+                        )
+                    ]),
+                    html.Div([
+                        dcc.Graph(
+                            id='T-SNE-plot-latent',
+                            figure=tsne_fig_latent,
+                            style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                        ),
+                    ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+
+                    html.Div([
+                        dcc.Graph(
+                            id='PaCMAP-plot-latent',
+                            figure=pacmap_fig_latent,
+                            style={"width": "100%", "display": "inline-block", 'height': '300px'}
+                        ),
+                    ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}),
+
+                ], style={'padding': '20px', 'display': 'flex', 'flexDirection': 'row', 'borderRadius': '15px', 'background': '#FFFFFF', 'margin': '10px', 'width': '95%', 'justify-content': 'space-around', 'align-items': 'flex-start'}),
+                
+            ], style={"display": "flex", "flexDirection": "row", "padding": "20px", "background": "#E5F6FD", 'flex-wrap': 'wrap', 'height': '90vh'})
         ]),
     ])
 ])
