@@ -6,8 +6,7 @@ fig_layout_dict = {
         'yanchor': 'top',
         'font': {
             'size': 32,
-            'color': 'black',
-            'family': 'Arial Black', 
+            'color': 'black', 
             'weight': 'bold'
         }
     },
@@ -41,7 +40,6 @@ fig_layout_dict_mammoth = {
         'font': {
             'size': 32,
             'color': 'black',
-            'family': 'Arial Black', 
             'weight': 'bold'
         }
     },
@@ -106,7 +104,6 @@ fig_layout_dict_mammoth = {
     "coloraxis_showscale": False
 }
 
-
 small_fig_layout_dict = {
     "title": {
         'y': 0.95,
@@ -116,7 +113,6 @@ small_fig_layout_dict = {
         'font': {
             'size': 32,
             'color': 'black',
-            'family': 'Arial Black', 
             'weight': 'bold'
         }
     },
