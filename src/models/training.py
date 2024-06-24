@@ -1,5 +1,6 @@
 import umap
 import trimap
+import pacmap
 import numpy as np
 import pandas as pd
 from sklearn.manifold import TSNE
@@ -38,7 +39,8 @@ def generate_latent_data() -> pd.DataFrame:
 
     emb_latent_trimap = trimap.TRIMAP().fit_transform(latent_data)
     emb_latent_umap = umap.UMAP().fit_transform(latent_data)
-    emb_latent_tsne = TSNE(n_components=2, perplexity=30, n_iter=1000).fit_transform(latent_data)
+    emb_latent_tsne = TSNE(n_components=2, n_iter=1000).fit_transform(latent_data)
+    emb_latent_pacmap = pacmap.PaCMAP(n_components=2).fit_transform(latent_data, init='pca')
 
     df_latent = pd.DataFrame({
         'x': emb_latent_trimap[:, 0].squeeze(),
@@ -47,9 +49,12 @@ def generate_latent_data() -> pd.DataFrame:
         'y_umap': emb_latent_umap[:, 1].squeeze(),
         'x_tsne': emb_latent_tsne[:, 0].squeeze(),
         'y_tsne': emb_latent_tsne[:, 1].squeeze(),
+        'x_pacmap': emb_latent_pacmap[:, 0].squeeze(),
+        'y_pacmap': emb_latent_pacmap[:, 1].squeeze(),
         'label': y_test.squeeze(),
         'index': np.arange(len(y_test))
     })
+
     return df_latent
 
 

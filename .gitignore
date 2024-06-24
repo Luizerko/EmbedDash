@@ -5,6 +5,12 @@ __pycache__/
 
 # data files
 mnist_data.pkl
+mammoth_data.pkl
+mnist_param_grid_data.pkl
+mammoth_param_grid_data.pkl
+mammoth_3d_50k.json
+mnist_array.npy
+
 
 # C extensions
 *.so
