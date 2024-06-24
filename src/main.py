@@ -110,7 +110,7 @@ pacmap_mammoth = px.scatter_3d(
 
 
 ### Latent Data
-trimap_latent = px.scatter(
+trimap_fig_latent = px.scatter(
     df_latent, x='x', y='y', color='label',
     title="TRIMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
@@ -118,7 +118,7 @@ trimap_latent = px.scatter(
     width=700, height=480, size_max=10
 ).update_layout(fig_layout_dict)
 
-umap_latent = px.scatter(
+umap_fig_latent = px.scatter(
     df_latent, x='x_umap', y='y_umap', color='label',
     title="UMAP Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
@@ -126,7 +126,7 @@ umap_latent = px.scatter(
     width=700, height=480
 ).update_layout(fig_layout_dict)
 
-tsne_latent = px.scatter(
+tsne_fig_latent = px.scatter(
     df_latent, x='x_tsne', y='y_tsne', color='label',
     title="T-SNE Embedding",
     labels={'color': 'Digit', 'label': 'Label'},
@@ -301,7 +301,7 @@ app.layout = html.Div([
                     html.Div([
                         dcc.Graph(
                             id='scatter-plot-latent',
-                            figure=fig_latent,
+                            figure=trimap_fig_latent,
                             style={}
                         )
                     ]),
