@@ -4,7 +4,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 import plotly.express as px
 import plotly.graph_objects as go
-from layouts import fig_layout_dict, small_fig_layout_dict
+from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
 
 
 # Compute centroids for different clusters of data
@@ -176,3 +176,145 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
         updated_fig.update_layout(fig_layout_dict)
     
     return updated_fig
+
+
+def make_mammoth_figure(df, version, index=False):
+
+    main_type = version.split('_')[0]
+
+    if main_type == "original":
+        fig = px.scatter_3d(
+            df, x='x', y='y', z='z', color='label',
+            title="Original Mammoth Data",
+            hover_data={'label': False, 'x': False, 'y': False, 'z': False},
+            width=600, height=480
+        )
+
+    elif main_type == "trimap":
+        fig = px.scatter_3d(
+            df, x='x_'+version, y='y_'+version, z='z_'+version, color='label',
+            title="TRIMAP",
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'z_'+version: False},
+            width=600, height=480
+        )
+    
+    elif main_type == "umap":
+        fig = px.scatter_3d(
+            df, x='x_'+version, y='y_'+version, z='z_'+version, color='label',
+            title="UMAP",
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'z_'+version: False},
+            width=600, height=480
+        )
+        
+    elif main_type == "tsne":
+        fig = px.scatter_3d(
+            df, x='x_'+version, y='y_'+version, z='z_'+version, color='label',
+            title="T-SNE",
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'z_'+version: False},
+            width=600, height=480
+        )
+
+    elif main_type == "pacmap":
+        fig = px.scatter_3d(
+            df, x='x_'+version, y='y_'+version, z='z_'+version, color='label',
+            title="PACMAP Embedding",
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'z_'+version: False},
+            width=600, height=480
+    )
+
+    fig.update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+
+    if not index:
+        return fig
+    
+    if main_type == 'original':
+        x_loc = 'x'
+        y_loc = 'y'
+        z_loc = 'z'
+    else:
+        x_loc = 'x_'+version
+        y_loc = 'y_'+version
+        z_loc = 'z_'+version
+
+    fig.add_trace(
+        go.Scatter3d(
+            x=[df.loc[index, x_loc]], 
+            y=[df.loc[index, y_loc]], 
+            z=[df.loc[index, z_loc]], 
+            mode='markers',
+            marker=dict(symbol='circle-open', size=20, opacity=1.0, color='black')
+        )
+    )
+
+    return fig
+
+
+def make_latent_figure(df, version, index=False):
+
+    main_type = version.split('_')[0]
+
+    if main_type == "trimap":
+        fig = px.scatter(
+            df, x='x', y='y', color='label',
+            title="TRIMAP",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': False, 'x': False, 'y': False, 'image': False, 'index': False},
+            width=700, height=480, size_max=10
+        )
+    
+    elif main_type == "umap":
+        fig = px.scatter(
+            df, x='x_'+version, y='y_'+version, color='label',
+            title="UMAP",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            width=700, height=480
+        )
+        
+    elif main_type == "tsne":
+        fig = px.scatter(
+            df, x='x_'+version, y='y_'+version, color='label',
+            title="UMAP",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            width=700, height=480
+        )
+
+    elif main_type == "pacmap":
+        fig = px.scatter(
+            df, x='x_'+version, y='y_'+version, color='label',
+            title="PaCMAP",
+            labels={'color': 'Digit', 'label': 'Label'},
+            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            width=700, height=480
+        )
+
+    # TODO: input correct layout_dict once it's made
+    fig.update_layout(fig_layout_dict)
+
+    if not index:
+        return fig
+
+    # if a point is highlighted, highlight that point
+    df_row = df[df['index'] == index]
+    x = float(df_row['x_'+version])
+    y = float(df_row['y_'+version])
+    
+    marker = go.Scattergl(
+        x=[x], y=[y],
+        mode='markers',
+        marker=dict(
+            size=20,
+            color='rgba(0, 0, 0, 1)',
+            symbol='diamond-open',
+            line=dict(color='rgba(0,0,0,1)', width=3)
+        ),
+        name='hover_marker',
+        showlegend=False
+    )
+
+    fig.add_trace(marker)
+
+    return fig
+
+

@@ -14,7 +14,7 @@ from dash.exceptions import PreventUpdate
 from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth
 from models import generate_latent_data
 
-from utils import make_mnist_figure
+from utils import make_mnist_figure, make_mammoth_figure, make_latent_figure
 
 
 ####################### VARIABLES #######################
@@ -48,6 +48,9 @@ if dataframe_mammoth_path.exists():
     # Load the DataFrame from the file
     df_mammoth = pd.read_pickle(dataframe_mammoth_path)
 
+    df_mammoth['index'] = range(0, len(df_mammoth))
+
+
 ### Latent Data
 if not latent_data_path.exists():
     df_latent = generate_latent_data()
@@ -55,6 +58,7 @@ if not latent_data_path.exists():
 else:
     # Load the latent data from the file
     df_latent = pd.read_pickle(latent_data_path)
+
 
 mnist_plot_dictionary = {'main': 'trimap', 'subplot_1': 'umap', 'subplot_2': 'tsne', 'subplot_3': 'pacmap'}
 mnist_embedding_dictionary = {'trimap': 'main', 'umap': 'subplot_1', 'tsne': 'subplot_2', 'pacmap': 'subplot_3'}
@@ -73,75 +77,26 @@ pacmap_mnist = make_mnist_figure(df_mnist, 'pacmap_nneighbors_10_init_pca', is_s
 
 
 ### Mammoth Data
-original_mammoth = px.scatter_3d(
-    df_mammoth, x='x', y='y', z='z', color='label',
-    title="Original Mammoth Data",
-    hover_data={'label': False, 'x': False, 'y': False, 'z': False},
-    width=600, height=480
-).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+original_mammoth = make_mammoth_figure(df_mammoth, 'original')
 
-trimap_mammoth = px.scatter_3d(
-    df_mammoth, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', z='z_trimap_nin_12_nout_4', color='label',
-    title="TRIMAP Embedding",
-    hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'z_trimap_nin_12_nout_4': False},
-    width=600, height=480
-).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+trimap_mammoth = make_mammoth_figure(df_mammoth, 'trimap_nin_12_nout_4')
 
-umap_mammoth = px.scatter_3d(
-    df_mammoth, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', z='z_umap_nneighbors_15_mindist_0.1', color='label',
-    title="UMAP Embedding",
-    hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'z_umap_nneighbors_15_mindist_0.1': False},
-    width=600, height=480
-).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+umap_mammoth = make_mammoth_figure(df_mammoth, 'umap_nneighbors_15_mindist_0.1')
 
-tsne_mammoth = px.scatter_3d(
-    df_mammoth, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', z='z_tsne_perp_30_exa_12', color='label',
-    title="T-SNE Embedding",
-    hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'z_tsne_perp_30_exa_12': False},
-    width=600, height=480
-).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+tsne_mammoth = make_mammoth_figure(df_mammoth, 'tsne_perp_30_exa_12')
 
-pacmap_mammoth = px.scatter_3d(
-    df_mammoth, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', z='z_pacmap_nneighbors_10_init_pca', color='label',
-    title="PACMAP Embedding",
-    hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'z_pacmap_nneighbors_10_init_pca': False},
-    width=600, height=480
-).update_layout(fig_layout_dict_mammoth).update_traces(marker=dict(size=1))
+pacmap_mammoth = make_mammoth_figure(df_mammoth, 'pacmap_nneighbors_10_init_pca')
+
 
 
 ### Latent Data
-trimap_fig_latent = px.scatter(
-    df_latent, x='x', y='y', color='label',
-    title="TRIMAP Embedding",
-    labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': False, 'x': False, 'y': False},
-    width=700, height=480, size_max=10
-).update_layout(fig_layout_dict)
+trimap_fig_latent = make_latent_figure(df_latent, 'trimap')
 
-umap_fig_latent = px.scatter(
-    df_latent, x='x_umap', y='y_umap', color='label',
-    title="UMAP Embedding",
-    labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': False, 'x_umap': False, 'y_umap': False},
-    width=700, height=480
-).update_layout(fig_layout_dict)
+umap_fig_latent = make_latent_figure(df_latent, 'umap')
 
-tsne_fig_latent = px.scatter(
-    df_latent, x='x_tsne', y='y_tsne', color='label',
-    title="T-SNE Embedding",
-    labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': False, 'x_tsne': False, 'y_tsne': False},
-    width=400, height=320
-).update_layout(small_fig_layout_dict)
+tsne_fig_latent = make_latent_figure(df_latent, 'tsne')
 
-
-pacmap_fig_latent = px.scatter(
-    df_latent, x='x_pacmap', y='y_pacmap', color='label',
-    title="PaCMAP Embedding",
-    labels={'color': 'Digit', 'label': 'Label'},
-    hover_data={'label': False, 'x_pacmap': False, 'y_pacmap': False, 'image': False},
-    width=400, height=320
-).update_layout(small_fig_layout_dict)
+pacmap_fig_latent = make_latent_figure(df_latent, 'pacmap', index=1)
 
 
 ####################### APP LAYOUT #######################
