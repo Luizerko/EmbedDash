@@ -5,9 +5,9 @@ matplotlib
 plotly
 pacmap
 dash
+dash-bootstrap-components
 scikit-learn
 scipy
 tensorflow
 keras
 umap-learn
-scikit-learn
