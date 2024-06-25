@@ -10,6 +10,8 @@ fig_layout_dict = {
             'weight': 'bold'
         }
     },
+    "width": 800,
+    "height": 640,
     "margin": dict(l=20, r=20, t=70, b=20),
     "paper_bgcolor": "White",
     "xaxis": dict(showgrid=False, zeroline=False, visible=False),
@@ -104,6 +106,43 @@ fig_layout_dict_mammoth = {
     "coloraxis_showscale": False
 }
 
+fig_layout_dict_latent = {
+        "title": {
+        'y': 0.95,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top',
+        'font': {
+            'size': 32,
+            'color': 'black', 
+            'weight': 'bold'
+        }
+    },
+    "width": 800,
+    "height": 480,
+    "margin": dict(l=20, r=20, t=70, b=20),
+    "paper_bgcolor": "White",
+    "xaxis": dict(showgrid=False, zeroline=False, visible=False),
+    "yaxis": dict(showgrid=False, zeroline=False, visible=False),
+    "legend": dict(
+        orientation='h',
+        x=0.5,
+        y=-0.05,
+        xanchor='center',
+        yanchor='top',
+        title="Label",
+        traceorder="normal",
+        font=dict(
+            family="Arial",
+            size=18,
+            color="black"
+        ),
+        bgcolor="White"
+    )
+}
+
+
+
 small_fig_layout_dict = {
     "title": {
         'y': 0.95,
@@ -116,6 +155,8 @@ small_fig_layout_dict = {
             'weight': 'bold'
         }
     },
+    "width": 400,
+    "height": 320,
     "margin": dict(l=0, r=0, t=60, b=0),
     "paper_bgcolor": "White",
     "xaxis": dict(showgrid=False, zeroline=False, visible=False),
