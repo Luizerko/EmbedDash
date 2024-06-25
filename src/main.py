@@ -25,7 +25,7 @@ data_path = Path("data/")
 if not os.path.exists(data_path):
     os.makedirs(data_path)
     print(f'Folder "{data_path}" created.')
-dataframe_mnist_path = data_path / "mnist_param_grid_data.pkl"
+dataframe_mnist_path = data_path / "mnist_param_grid_sampled_15k_data.pkl"
 dataframe_mammoth_path = data_path / "mammoth_param_grid_data.pkl"
 latent_data_path = data_path / "latent_data.pkl"
 
@@ -554,6 +554,7 @@ def display_hover_image_latent(MainhoverData, Sub1hoverData, Sub2hoverData, Sub3
             hoverData = inp
             break
     
+
     if hoverData is None:
         return '', '', None, None, None, None
 
@@ -756,6 +757,27 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             dcc.Slider(min=0, max=len(multiplicative_values)-1, value=rev_marks[trimap_nout_value], step=None, marks=marks,
             id='mnist_slider_2',
             ),
+
+            html.Div([
+                html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                dbc.Button(
+                    html.I(className="bi bi-info-circle-fill me-2"),
+                    id="info_button_mnist", 
+                    color="info", 
+                    className="me-2", 
+                    style={"fontSize": "1.5rem", "background-color": "white", "boder-radius": "10px", "border-width": "0px"}
+                ),
+                dbc.Popover(
+                    [
+                        dbc.PopoverBody(dcc.Markdown(information_mnist, style={"font-size": "18px", 'color': '#FFFFFF'})),
+                    ],
+                    target="info_button_mnist",
+                    trigger="click",
+                    style = {'background-color': '#595959'}
+                ),
+
+            ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'align-items': 'center', 'display': 'flex', 'justify-content': 'center', 'width': '85%', 'margin': '10px'}),
+
             html.Div([], style={'height': '50px'}),
             html.Label('Choose the Embedding:', style={}), 
             dcc.Dropdown(
@@ -822,6 +844,25 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             dcc.Slider(min=0, max=len(multiplicative_values_2)-1, value=rev_marks_2[umap_mindist_value], step=None, marks=marks_2,
             id='mnist_slider_2',
             ),
+            html.Div([
+                html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                dbc.Button(
+                    html.I(className="bi bi-info-circle-fill me-2"),
+                    id="info_button_mnist", 
+                    color="info", 
+                    className="me-2", 
+                    style={"fontSize": "1.5rem", "background-color": "white", "boder-radius": "10px", "border-width": "0px"}
+                ),
+                dbc.Popover(
+                    [
+                        dbc.PopoverBody(dcc.Markdown(information_mnist, style={"font-size": "18px", 'color': '#FFFFFF'})),
+                    ],
+                    target="info_button_mnist",
+                    trigger="click",
+                    style = {'background-color': '#595959'}
+                ),
+
+            ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'align-items': 'center', 'display': 'flex', 'justify-content': 'center', 'width': '85%', 'margin': '10px'}),
             html.Div([], style={'height': '50px'}),
             html.Label('Choose the Embedding:', style={}), 
             dcc.Dropdown(
@@ -887,6 +928,25 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             dcc.Slider(min=0, max=len(multiplicative_values)-1, value=rev_marks[tsne_exa_value], step=None, marks=marks,
             id='mnist_slider_2',
             ),
+            html.Div([
+                html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                dbc.Button(
+                    html.I(className="bi bi-info-circle-fill me-2"),
+                    id="info_button_mnist", 
+                    color="info", 
+                    className="me-2", 
+                    style={"fontSize": "1.5rem", "background-color": "white", "boder-radius": "10px", "border-width": "0px"}
+                ),
+                dbc.Popover(
+                    [
+                        dbc.PopoverBody(dcc.Markdown(information_mnist, style={"font-size": "18px", 'color': '#FFFFFF'})),
+                    ],
+                    target="info_button_mnist",
+                    trigger="click",
+                    style = {'background-color': '#595959'}
+                ),
+
+            ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'align-items': 'center', 'display': 'flex', 'justify-content': 'center', 'width': '85%', 'margin': '10px'}),
             html.Div([], style={'height': '50px'}),
             html.Label('Choose the Embedding:', style={}), 
             dcc.Dropdown(
@@ -911,6 +971,7 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             
             mnist_plot_dictionary[mnist_embedding_dictionary['tsne']] = 'pacmap'
             mnist_embedding_dictionary['pacmap'] = mnist_embedding_dictionary['tsne']
+
 
         if mnist_embedding_dictionary['tsne'] == 'subplot_1':
             mnist_plot_dictionary['main'] = 'tsne'
@@ -954,6 +1015,27 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             dcc.Slider(min=0, max=len(multiplicative_values_2)-1, value=rev_marks_2[pacmap_init_value], step=None, marks=marks_2,
             id='mnist_slider_2',
             ),
+
+            html.Div([
+                html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                dbc.Button(
+                    html.I(className="bi bi-info-circle-fill me-2"),
+                    id="info_button_mnist", 
+                    color="info", 
+                    className="me-2", 
+                    style={"fontSize": "1.5rem", "background-color": "white", "boder-radius": "10px", "border-width": "0px"}
+                ),
+                dbc.Popover(
+                    [
+                        dbc.PopoverBody(dcc.Markdown(information_mnist, style={"font-size": "18px", 'color': '#FFFFFF'})),
+                    ],
+                    target="info_button_mnist",
+                    trigger="click",
+                    style = {'background-color': '#595959'}
+                ),
+
+            ], style={'padding': '20px', 'borderRadius': '15px', 'background': '#FFFFFF', 'align-items': 'center', 'display': 'flex', 'justify-content': 'center', 'width': '85%', 'margin': '10px'}),
+
             html.Div([], style={'height': '50px'}),
             html.Label('Choose the Embedding:', style={}), 
             dcc.Dropdown(

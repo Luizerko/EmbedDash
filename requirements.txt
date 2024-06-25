@@ -11,3 +11,4 @@ tensorflow
 keras
 umap-learn
 scikit-learn
+dash_bootstrap_components
