@@ -45,6 +45,7 @@ fig_layout_dict_mammoth = {
             'weight': 'bold'
         }
     },
+    "uirevision": True,
     "margin": dict(l=20, r=20, t=60, b=20),
     "scene": {
         "bgcolor": "rgb(229, 236, 246)",

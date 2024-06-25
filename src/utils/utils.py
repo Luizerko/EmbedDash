@@ -104,7 +104,7 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
             df, x='x_'+version, y='y_'+version, color='label',
             title="TRIMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'index': False},
             width=800, height=640, size_max=10,
             category_orders={'label': category_order}
         )
@@ -114,7 +114,7 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
             df, x='x_'+version, y='y_'+version, color='label',
             title="UMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'index': False},
             width=800, height=640, size_max=10,
             category_orders={'label': category_order}
         )
@@ -124,7 +124,7 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
             df, x='x_'+version, y='y_'+version, color='label',
             title="TSNE Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'index': False},
             width=800, height=640, size_max=10,
             category_orders={'label': category_order}
         )
@@ -134,7 +134,7 @@ def make_mnist_figure(df, version, index=False, is_subplot=False):
             df, x='x_'+version, y='y_'+version, color='label',
             title="PACMAP Embedding ",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'index': False},
             width=800, height=640, size_max=10,
             category_orders={'label': category_order}
         )
@@ -186,7 +186,7 @@ def make_mammoth_figure(df, version, index=False):
         fig = px.scatter_3d(
             df, x='x', y='y', z='z', color='label',
             title="Original Mammoth Data",
-            hover_data={'label': False, 'x': False, 'y': False, 'z': False, 'index':False},
+            hover_data={'x': False, 'y': False, 'z': False, 'index':False},
             width=600, height=480
         )
 
@@ -194,7 +194,7 @@ def make_mammoth_figure(df, version, index=False):
         fig = px.scatter_3d(
             df, x='x_'+version, y='y_'+version, z='z_'+version, color='label',
             title="TRIMAP",
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'z_'+version: False, 'index':False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'z_'+version: False, 'index':False},
             width=600, height=480
         )
     
@@ -202,7 +202,7 @@ def make_mammoth_figure(df, version, index=False):
         fig = px.scatter_3d(
             df, x='x_'+version, y='y_'+version, z='z_'+version, color='label',
             title="UMAP",
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'z_'+version: False, 'index':False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'z_'+version: False, 'index':False},
             width=600, height=480
         )
         
@@ -210,7 +210,7 @@ def make_mammoth_figure(df, version, index=False):
         fig = px.scatter_3d(
             df, x='x_'+version, y='y_'+version, z='z_'+version, color='label',
             title="T-SNE",
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'z_'+version: False, 'index':False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'z_'+version: False, 'index':False},
             width=600, height=480
         )
 
@@ -218,7 +218,7 @@ def make_mammoth_figure(df, version, index=False):
         fig = px.scatter_3d(
             df, x='x_'+version, y='y_'+version, z='z_'+version, color='label',
             title="PACMAP Embedding",
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'z_'+version: False, 'index':False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'z_'+version: False, 'index':False},
             width=600, height=480
     )
 
@@ -258,7 +258,7 @@ def make_latent_figure(df, version, index=False):
             df, x='x', y='y', color='label',
             title="TRIMAP",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x': False, 'y': False, 'image': False, 'index': False},
+            hover_data={'x': False, 'y': False, 'index': False},
             width=600, height=480, size_max=10
         )
     
@@ -267,7 +267,7 @@ def make_latent_figure(df, version, index=False):
             df, x='x_'+version, y='y_'+version, color='label',
             title="UMAP",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'index': False},
             width=600, height=480
         )
         
@@ -276,7 +276,7 @@ def make_latent_figure(df, version, index=False):
             df, x='x_'+version, y='y_'+version, color='label',
             title="T-SNE",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'index': False},
             width=600, height=480
         )
 
@@ -285,7 +285,7 @@ def make_latent_figure(df, version, index=False):
             df, x='x_'+version, y='y_'+version, color='label',
             title="PACMAP",
             labels={'color': 'Digit', 'label': 'Label'},
-            hover_data={'label': False, 'x_'+version: False, 'y_'+version: False, 'image': False, 'index': False},
+            hover_data={'x_'+version: False, 'y_'+version: False, 'index': False},
             width=600, height=480
         )
 
@@ -319,5 +319,3 @@ def make_latent_figure(df, version, index=False):
     fig.add_trace(marker)
 
     return fig
-
-
