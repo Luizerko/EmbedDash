@@ -5,6 +5,7 @@ from pathlib import Path
 from dash import Dash, html, dcc, Input, Output, State, callback, no_update
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
 
 from models import generate_latent_data
 
@@ -22,7 +23,7 @@ dataframe_mammoth_path = data_path / "mammoth_param_grid_data.pkl"
 latent_data_path = data_path / "latent_data.pkl"
 
 external_stylesheets = [dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP]
-app = Dash(__name__, external_stylesheets=external_stylesheets, title="Model explorations", update_title=None)
+app = Dash(__name__, external_stylesheets=external_stylesheets, title="EmbedDash", update_title=None)
 
 
 ####################### DATA PREPROCESSING #######################
@@ -111,7 +112,7 @@ app.layout = html.Div([
         ### MNIST Data
         dcc.Tab(label='MNIST Data', children=[
             html.Div([
-                html.Label('Asses Quality of Embeddings', id='title_mnist', style={'margin-top': '10px', 'margin-bottom': '10px', 'font-size': '50px', 'font-weight': 'bold', 'width': '100%', 'display': 'flex', 'justify-content': 'center'}),
+                html.Label('Assess Quality of Embeddings', id='title_mnist', style={'margin-top': '10px', 'margin-bottom': '10px', 'font-size': '50px', 'font-weight': 'bold', 'width': '100%', 'display': 'flex', 'justify-content': 'center'}),
                 html.Div([
                     ### Upper row
                     html.Div([
@@ -672,102 +673,102 @@ def display_click_image_latent(trimapClickData, umapClickData, tsneClickData, pa
 
     return original_image, f'Label: {original_label}', original_index, trimap_img, umap_img, tsne_img, pacmap_img, None, None, None, None
 
-# @callback(
-#     [Output('clicked-index-mammoth', 'data'),
-#      Output('mammoth_original_plot', 'figure', allow_duplicate=True),
-#      Output('mammoth_trimap_plot', 'figure', allow_duplicate=True),
-#      Output('mammoth_umap_plot', 'figure', allow_duplicate=True),
-#      Output('mammoth_tsne_plot', 'figure', allow_duplicate=True),
-#      Output('mammoth_pacmap_plot', 'figure', allow_duplicate=True),
-#      Output('mammoth_original_plot', 'clickData'),
-#      Output('mammoth_trimap_plot', 'clickData'),
-#      Output('mammoth_umap_plot', 'clickData'),
-#      Output('mammoth_tsne_plot', 'clickData'),
-#      Output('mammoth_pacmap_plot', 'clickData'),],
-#     [Input('mammoth_original_plot', 'clickData'),
-#      Input('mammoth_trimap_plot', 'clickData'),
-#      Input('mammoth_umap_plot', 'clickData'),
-#      Input('mammoth_tsne_plot', 'clickData'),
-#      Input('mammoth_pacmap_plot', 'clickData')],
-#     [State('mammoth_original_plot', 'figure'),
-#      State('mammoth_trimap_plot', 'figure'),
-#      State('mammoth_umap_plot', 'figure'),
-#      State('mammoth_tsne_plot', 'figure'),
-#      State('mammoth_pacmap_plot', 'figure')],
-#     prevent_initial_call=True
-# )
-# def display_click_mammoth(originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData,
-#                           originalfig, trimapfig, umapfig, tsnefig, pacmapfig):
-#     clickData = None
-#     inputs = [originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData]
+@callback(
+    [Output('clicked-index-mammoth', 'data'),
+     Output('mammoth_original_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_trimap_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_umap_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_tsne_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_pacmap_plot', 'figure', allow_duplicate=True),
+     Output('mammoth_original_plot', 'clickData'),
+     Output('mammoth_trimap_plot', 'clickData'),
+     Output('mammoth_umap_plot', 'clickData'),
+     Output('mammoth_tsne_plot', 'clickData'),
+     Output('mammoth_pacmap_plot', 'clickData'),],
+    [Input('mammoth_original_plot', 'clickData'),
+     Input('mammoth_trimap_plot', 'clickData'),
+     Input('mammoth_umap_plot', 'clickData'),
+     Input('mammoth_tsne_plot', 'clickData'),
+     Input('mammoth_pacmap_plot', 'clickData')],
+    [State('mammoth_original_plot', 'figure'),
+     State('mammoth_trimap_plot', 'figure'),
+     State('mammoth_umap_plot', 'figure'),
+     State('mammoth_tsne_plot', 'figure'),
+     State('mammoth_pacmap_plot', 'figure')],
+    prevent_initial_call=True
+)
+def display_click_mammoth(originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData,
+                          originalfig, trimapfig, umapfig, tsnefig, pacmapfig):
+    clickData = None
+    inputs = [originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData]
     
-#     for inp in inputs:
-#         if inp is not None:
-#             clickData = inp
-#             break
+    for inp in inputs:
+        if inp is not None:
+            clickData = inp
+            break
 
-#     if clickData is None:
-#         raise PreventUpdate
+    if clickData is None:
+        raise PreventUpdate
 
-#     original_index = clickData['points'][0]['customdata'][0]
-#     data_row = df_mammoth.loc[original_index]
+    original_index = clickData['points'][0]['customdata'][0]
+    data_row = df_mammoth.loc[original_index]
 
-#     originalfig['data'] = [
-#             originalfig['data'][0], go.Scatter3d(
-#                 x=[data_row['x']], 
-#                 y=[data_row['y']], 
-#                 z=[data_row['z']], 
-#                 mode='markers',
-#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-#                 showlegend=False
-#             ).to_plotly_json()
-#     ]
+    originalfig['data'] = [
+            originalfig['data'][0], go.Scatter3d(
+                x=[data_row['x']], 
+                y=[data_row['y']], 
+                z=[data_row['z']], 
+                mode='markers',
+                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+                showlegend=False
+            ).to_plotly_json()
+    ]
 
-#     # original_img = make_mammoth_figure(df_mammoth, 'original', index=original_index)
-#     trimapfig['data'] = [
-#             trimapfig['data'][0], go.Scatter3d(
-#                 x=[data_row['x_trimap_nin_12_nout_4']], 
-#                 y=[data_row['y_trimap_nin_12_nout_4']], 
-#                 z=[data_row['z_trimap_nin_12_nout_4']], 
-#                 mode='markers',
-#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-#                 showlegend=False
-#             ).to_plotly_json()
-#     ]
-#     umapfig['data'] = [
-#             umapfig['data'][0], go.Scatter3d(
-#                 x=[data_row['x_umap_nneighbors_15_mindist_0.1']], 
-#                 y=[data_row['y_umap_nneighbors_15_mindist_0.1']], 
-#                 z=[data_row['z_umap_nneighbors_15_mindist_0.1']], 
-#                 mode='markers',
-#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-#                 showlegend=False
-#             ).to_plotly_json()
-#     ]
+    # original_img = make_mammoth_figure(df_mammoth, 'original', index=original_index)
+    trimapfig['data'] = [
+            trimapfig['data'][0], go.Scatter3d(
+                x=[data_row['x_trimap_nin_12_nout_4']], 
+                y=[data_row['y_trimap_nin_12_nout_4']], 
+                z=[data_row['z_trimap_nin_12_nout_4']], 
+                mode='markers',
+                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+                showlegend=False
+            ).to_plotly_json()
+    ]
+    umapfig['data'] = [
+            umapfig['data'][0], go.Scatter3d(
+                x=[data_row['x_umap_nneighbors_15_mindist_0.1']], 
+                y=[data_row['y_umap_nneighbors_15_mindist_0.1']], 
+                z=[data_row['z_umap_nneighbors_15_mindist_0.1']], 
+                mode='markers',
+                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+                showlegend=False
+            ).to_plotly_json()
+    ]
     
-#     tsnefig['data'] = [
-#             tsnefig['data'][0], go.Scatter3d(
-#                 x=[data_row['x_tsne_perp_30_exa_12']], 
-#                 y=[data_row['y_tsne_perp_30_exa_12']], 
-#                 z=[data_row['z_tsne_perp_30_exa_12']], 
-#                 mode='markers',
-#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-#                 showlegend=False
-#             ).to_plotly_json()
-#     ]
+    tsnefig['data'] = [
+            tsnefig['data'][0], go.Scatter3d(
+                x=[data_row['x_tsne_perp_30_exa_12']], 
+                y=[data_row['y_tsne_perp_30_exa_12']], 
+                z=[data_row['z_tsne_perp_30_exa_12']], 
+                mode='markers',
+                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+                showlegend=False
+            ).to_plotly_json()
+    ]
 
-#     pacmapfig['data'] = [
-#             pacmapfig['data'][0], go.Scatter3d(
-#                 x=[data_row['x_pacmap_nneighbors_10_init_pca']], 
-#                 y=[data_row['y_pacmap_nneighbors_10_init_pca']], 
-#                 z=[data_row['z_pacmap_nneighbors_10_init_pca']], 
-#                 mode='markers',
-#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-#                 showlegend=False
-#             ).to_plotly_json()
-#     ]
+    pacmapfig['data'] = [
+            pacmapfig['data'][0], go.Scatter3d(
+                x=[data_row['x_pacmap_nneighbors_10_init_pca']], 
+                y=[data_row['y_pacmap_nneighbors_10_init_pca']], 
+                z=[data_row['z_pacmap_nneighbors_10_init_pca']], 
+                mode='markers',
+                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+                showlegend=False
+            ).to_plotly_json()
+    ]
     
-#     return original_index, originalfig, trimapfig, umapfig, tsnefig, pacmapfig, None, None, None, None, None
+    return original_index, originalfig, trimapfig, umapfig, tsnefig, pacmapfig, None, None, None, None, None
     
 
 @app.callback(

@@ -62,23 +62,20 @@ for i in trimap_n_in:
         df['x_trimap_nin_'+str(i)+'_nout_'+str(j)] = emb_mnist_trimap[:, 0]
         df['y_trimap_nin_'+str(i)+'_nout_'+str(j)] = emb_mnist_trimap[:, 1]
 
-# import ipdb
-# ipdb.set_trace()
+        df['x_trimap_nin_'+str(i)+'_nout_'+str(j)] = (df['x_trimap_nin_'+str(i)+'_nout_'+str(j)] - df['x_trimap_nin_'+str(i)+'_nout_'+str(j)].min())/(df['x_trimap_nin_'+str(i)+'_nout_'+str(j)].max() - df['x_trimap_nin_'+str(i)+'_nout_'+str(j)].min())
 
-df['x_trimap_nin_12_nout_4'] = (df['x_trimap_nin_12_nout_4'] - df['x_trimap_nin_12_nout_4'].min())/(df['x_trimap_nin_12_nout_4'].max() - df['x_trimap_nin_12_nout_4'].min())
+        df['y_trimap_nin_'+str(i)+'_nout_'+str(j)] = (df['y_trimap_nin_'+str(i)+'_nout_'+str(j)] - df['y_trimap_nin_'+str(i)+'_nout_'+str(j)].min())/(df['y_trimap_nin_'+str(i)+'_nout_'+str(j)].max() - df['y_trimap_nin_'+str(i)+'_nout_'+str(j)].min())
 
-df['y_trimap_nin_12_nout_4'] = (df['y_trimap_nin_12_nout_4'] - df['y_trimap_nin_12_nout_4'].min())/(df['y_trimap_nin_12_nout_4'].max() - df['y_trimap_nin_12_nout_4'].min())
+        trimap_centroids = compute_centroids(np.array(df[['x_trimap_nin_'+str(i)+'_nout_'+str(j), 'y_trimap_nin_'+str(i)+'_nout_'+str(j)]]), np.array(df['label']))
 
-trimap_centroids = compute_centroids(np.array(df[['x_trimap_nin_12_nout_4', 'y_trimap_nin_12_nout_4']]), np.array(df['label']))
+        optimal_positions = minimize(objective_function,
+                                        np.array([*trimap_centroids.values()]).reshape(20),
+                                        method='L-BFGS-B',
+                                        args=(desired_distances,))
+        translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
 
-optimal_positions = minimize(objective_function,
-                                np.array([*trimap_centroids.values()]).reshape(20),
-                                method='L-BFGS-B',
-                                args=(desired_distances,))
-translations = compute_translations(trimap_centroids, optimal_positions.x.reshape(10, 2))
-
-df['x_trimap_shift'] = df['label'].map(lambda label: translations[label][0])
-df['y_trimap_shift'] = df['label'].map(lambda label: translations[label][1])
+        df['x_shift_trimap_nin_'+str(i)+'_nout_'+str(j)] = df['label'].map(lambda label: translations[label][0])
+        df['y_shift_trimap_nin_'+str(i)+'_nout_'+str(j)] = df['label'].map(lambda label: translations[label][1])
 
 print('\numap\n')
 # umap
@@ -90,20 +87,20 @@ for i in umap_n_neighbors:
         df['x_umap_nneighbors_'+str(i)+'_mindist_'+str(j)] = emb_mnist_umap[:, 0]
         df['y_umap_nneighbors_'+str(i)+'_mindist_'+str(j)] = emb_mnist_umap[:, 1]
 
-df['x_umap_nneighbors_15_mindist_0.1'] = (df['x_umap_nneighbors_15_mindist_0.1'] - df['x_umap_nneighbors_15_mindist_0.1'].min())/(df['x_umap_nneighbors_15_mindist_0.1'].max() - df['x_umap_nneighbors_15_mindist_0.1'].min())
+        df['x_umap_nneighbors_'+str(i)+'_mindist_'+str(j)] = (df['x_umap_nneighbors_'+str(i)+'_mindist_'+str(j)] - df['x_umap_nneighbors_'+str(i)+'_mindist_'+str(j)].min())/(df['x_umap_nneighbors_'+str(i)+'_mindist_'+str(j)].max() - df['x_umap_nneighbors_'+str(i)+'_mindist_'+str(j)].min())
 
-df['y_umap_nneighbors_15_mindist_0.1'] = (df['y_umap_nneighbors_15_mindist_0.1'] - df['y_umap_nneighbors_15_mindist_0.1'].min())/(df['y_umap_nneighbors_15_mindist_0.1'].max() - df['y_umap_nneighbors_15_mindist_0.1'].min())
+        df['y_umap_nneighbors_'+str(i)+'_mindist_'+str(j)] = (df['y_umap_nneighbors_'+str(i)+'_mindist_'+str(j)] - df['y_umap_nneighbors_'+str(i)+'_mindist_'+str(j)].min())/(df['y_umap_nneighbors_'+str(i)+'_mindist_'+str(j)].max() - df['y_umap_nneighbors_'+str(i)+'_mindist_'+str(j)].min())
 
-umap_centroids = compute_centroids(np.array(df[['x_umap_nneighbors_15_mindist_0.1', 'y_umap_nneighbors_15_mindist_0.1']]), np.array(df['label']))
+        umap_centroids = compute_centroids(np.array(df[['x_umap_nneighbors_'+str(i)+'_mindist_'+str(j), 'y_umap_nneighbors_'+str(i)+'_mindist_'+str(j)]]), np.array(df['label']))
 
-optimal_positions = minimize(objective_function,
-                                np.array([*umap_centroids.values()]).reshape(20),
-                                method='L-BFGS-B',
-                                args=(desired_distances,))
-translations = compute_translations(umap_centroids, optimal_positions.x.reshape(10, 2))
+        optimal_positions = minimize(objective_function,
+                                        np.array([*umap_centroids.values()]).reshape(20),
+                                        method='L-BFGS-B',
+                                        args=(desired_distances,))
+        translations = compute_translations(umap_centroids, optimal_positions.x.reshape(10, 2))
 
-df['x_umap_shift'] = df['label'].map(lambda label: translations[label][0])
-df['y_umap_shift'] = df['label'].map(lambda label: translations[label][1])
+        df['x_shift_umap_nneighbors_'+str(i)+'_mindist_'+str(j)] = df['label'].map(lambda label: translations[label][0])
+        df['y_shift_umap_nneighbors_'+str(i)+'_mindist_'+str(j)] = df['label'].map(lambda label: translations[label][1])
 
 print('\npacmap\n')
 # pacmap
@@ -115,20 +112,20 @@ for i in pacmap_n_neighbors:
         df['x_pacmap_nneighbors_'+str(i)+'_init_'+j] = emb_mnist_pacmap[:, 0]
         df['y_pacmap_nneighbors_'+str(i)+'_init_'+j] = emb_mnist_pacmap[:, 1]
 
-df['x_pacmap_nneighbors_10_init_pca'] = (df['x_pacmap_nneighbors_10_init_pca'] - df['x_pacmap_nneighbors_10_init_pca'].min())/(df['x_pacmap_nneighbors_10_init_pca'].max() - df['x_pacmap_nneighbors_10_init_pca'].min())
+        df['x_pacmap_nneighbors_'+str(i)+'_init_'+j] = (df['x_pacmap_nneighbors_'+str(i)+'_init_'+j] - df['x_pacmap_nneighbors_'+str(i)+'_init_'+j].min())/(df['x_pacmap_nneighbors_'+str(i)+'_init_'+j].max() - df['x_pacmap_nneighbors_'+str(i)+'_init_'+j].min())
 
-df['y_pacmap_nneighbors_10_init_pca'] = (df['y_pacmap_nneighbors_10_init_pca'] - df['y_pacmap_nneighbors_10_init_pca'].min())/(df['y_pacmap_nneighbors_10_init_pca'].max() - df['y_pacmap_nneighbors_10_init_pca'].min())
+        df['y_pacmap_nneighbors_'+str(i)+'_init_'+j] = (df['y_pacmap_nneighbors_'+str(i)+'_init_'+j] - df['y_pacmap_nneighbors_'+str(i)+'_init_'+j].min())/(df['y_pacmap_nneighbors_'+str(i)+'_init_'+j].max() - df['y_pacmap_nneighbors_'+str(i)+'_init_'+j].min())
 
-pacmap_centroids = compute_centroids(np.array(df[['x_pacmap_nneighbors_10_init_pca', 'y_pacmap_nneighbors_10_init_pca']]), np.array(df['label']))
+        pacmap_centroids = compute_centroids(np.array(df[['x_pacmap_nneighbors_'+str(i)+'_init_'+j, 'y_pacmap_nneighbors_'+str(i)+'_init_'+j]]), np.array(df['label']))
 
-optimal_positions = minimize(objective_function,
-                                np.array([*pacmap_centroids.values()]).reshape(20),
-                                method='L-BFGS-B',
-                                args=(desired_distances,))
-translations = compute_translations(pacmap_centroids, optimal_positions.x.reshape(10, 2))
+        optimal_positions = minimize(objective_function,
+                                        np.array([*pacmap_centroids.values()]).reshape(20),
+                                        method='L-BFGS-B',
+                                        args=(desired_distances,))
+        translations = compute_translations(pacmap_centroids, optimal_positions.x.reshape(10, 2))
 
-df['x_pacmap_shift'] = df['label'].map(lambda label: translations[label][0])
-df['y_pacmap_shift'] = df['label'].map(lambda label: translations[label][1])
+        df['x_shift_pacmap_nneighbors_'+str(i)+'_init_'+j] = df['label'].map(lambda label: translations[label][0])
+        df['y_shift_pacmap_nneighbors_'+str(i)+'_init_'+j] = df['label'].map(lambda label: translations[label][1])
 
 print('\ntsne\n')
 # t-sne
@@ -143,19 +140,19 @@ for i in tsne_perp:
         df['x_tsne_perp_'+str(i)+'_exa_'+str(j)] = emb_mnist_tsne[:, 0]
         df['y_tsne_perp_'+str(i)+'_exa_'+str(j)] = emb_mnist_tsne[:, 1]
 
-df['x_tsne_perp_30_exa_12'] = (df['x_tsne_perp_30_exa_12'] - df['x_tsne_perp_30_exa_12'].min())/(df['x_tsne_perp_30_exa_12'].max() - df['x_tsne_perp_30_exa_12'].min())
+        df['x_tsne_perp_'+str(i)+'_exa_'+str(j)] = (df['x_tsne_perp_'+str(i)+'_exa_'+str(j)] - df['x_tsne_perp_'+str(i)+'_exa_'+str(j)].min())/(df['x_tsne_perp_'+str(i)+'_exa_'+str(j)].max() - df['x_tsne_perp_'+str(i)+'_exa_'+str(j)].min())
 
-df['y_tsne_perp_30_exa_12'] = (df['y_tsne_perp_30_exa_12'] - df['y_tsne_perp_30_exa_12'].min())/(df['y_tsne_perp_30_exa_12'].max() - df['y_tsne_perp_30_exa_12'].min())
+        df['y_tsne_perp_'+str(i)+'_exa_'+str(j)] = (df['y_tsne_perp_'+str(i)+'_exa_'+str(j)] - df['y_tsne_perp_'+str(i)+'_exa_'+str(j)].min())/(df['y_tsne_perp_'+str(i)+'_exa_'+str(j)].max() - df['y_tsne_perp_'+str(i)+'_exa_'+str(j)].min())
 
-tsne_centroids = compute_centroids(np.array(df[['x_tsne_perp_30_exa_12', 'y_tsne_perp_30_exa_12']]), np.array(df['label']))
+        tsne_centroids = compute_centroids(np.array(df[['x_tsne_perp_'+str(i)+'_exa_'+str(j), 'y_tsne_perp_'+str(i)+'_exa_'+str(j)]]), np.array(df['label']))
 
-optimal_positions = minimize(objective_function,
-                                np.array([*tsne_centroids.values()]).reshape(20),
-                                method='L-BFGS-B',
-                                args=(desired_distances,))
-translations = compute_translations(tsne_centroids, optimal_positions.x.reshape(10, 2))
+        optimal_positions = minimize(objective_function,
+                                        np.array([*tsne_centroids.values()]).reshape(20),
+                                        method='L-BFGS-B',
+                                        args=(desired_distances,))
+        translations = compute_translations(tsne_centroids, optimal_positions.x.reshape(10, 2))
 
-df['x_tsne_shift'] = df['label'].map(lambda label: translations[label][0])
-df['y_tsne_shift'] = df['label'].map(lambda label: translations[label][1])
+        df['x_shift_tsne_perp_'+str(i)+'_exa_'+str(j)] = df['label'].map(lambda label: translations[label][0])
+        df['y_shift_tsne_perp_'+str(i)+'_exa_'+str(j)] = df['label'].map(lambda label: translations[label][1])
 
 df.to_pickle('./data/mnist_param_grid_data.pkl')

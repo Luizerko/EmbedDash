@@ -1,19 +1,130 @@
-name: mma-test
+name: mma2
 channels:
   - conda-forge
+  - defaults
 dependencies:
-  - python=3.10
+  - _libgcc_mutex=0.1=conda_forge
+  - _openmp_mutex=4.5=2_gnu
+  - bzip2=1.0.8=hd590300_5
+  - ca-certificates=2024.6.2=hbcca054_0
+  - joblib=1.4.2=pyhd8ed1ab_0
+  - ld_impl_linux-64=2.40=hf3520f5_3
+  - libblas=3.9.0=22_linux64_openblas
+  - libcblas=3.9.0=22_linux64_openblas
+  - libffi=3.4.2=h7f98852_5
+  - libgcc-ng=13.2.0=h77fa898_7
+  - libgfortran-ng=13.2.0=h69a702a_10
+  - libgfortran5=13.2.0=h3d2ce59_10
+  - libgomp=13.2.0=h77fa898_7
+  - liblapack=3.9.0=22_linux64_openblas
+  - libllvm14=14.0.6=hcd5def8_4
+  - libnsl=2.0.1=hd590300_0
+  - libopenblas=0.3.27=pthreads_h413a1c8_0
+  - libsqlite=3.46.0=hde9e2c9_0
+  - libstdcxx-ng=13.2.0=hc0a3c3a_7
+  - libuuid=2.38.1=h0b41bf4_0
+  - libxcrypt=4.4.36=hd590300_1
+  - libzlib=1.3.1=h4ab18f5_1
+  - ncurses=6.5=h59595ed_0
+  - numba=0.59.1=py310h7dc5dd1_0
+  - numpy=1.26.4=py310hb13e2d6_0
+  - openssl=3.3.1=h4ab18f5_0
+  - pacmap=0.7.3=pyhd8ed1ab_0
+  - pip=24.0=pyhd8ed1ab_0
+  - python=3.10.14=hd12c33a_0_cpython
+  - python-annoy=1.17.3=py310h76e45a6_1
+  - python_abi=3.10=4_cp310
+  - readline=8.2=h8228510_1
+  - scikit-learn=1.5.0=py310h981052a_1
+  - scipy=1.13.1=py310h93e2701_0
+  - setuptools=70.0.0=pyhd8ed1ab_0
+  - threadpoolctl=3.5.0=pyhc1e730c_0
+  - tk=8.6.13=noxft_h4845f30_101
+  - wheel=0.43.0=pyhd8ed1ab_1
+  - xz=5.2.6=h166bdaf_0
   - pip:
+      - absl-py==2.1.0
+      - asttokens==2.4.1
+      - astunparse==1.6.3
+      - blinker==1.8.2
+      - certifi==2024.6.2
+      - charset-normalizer==3.3.2
+      - click==8.1.7
+      - contourpy==1.2.1
+      - cycler==0.12.1
       - dash==2.17.0
       - dash-bootstrap-components==1.6.0
+      - dash-core-components==2.0.0
+      - dash-html-components==2.0.0
+      - dash-table==5.0.0
+      - decorator==5.1.1
+      - exceptiongroup==1.2.1
+      - executing==2.0.1
+      - flask==3.0.3
+      - flatbuffers==24.3.25
+      - fonttools==4.53.0
+      - gast==0.5.4
+      - google-pasta==0.2.0
+      - grpcio==1.64.1
+      - h5py==3.11.0
+      - idna==3.7
+      - importlib-metadata==7.1.0
+      - ipdb==0.13.13
+      - ipython==8.25.0
+      - itsdangerous==2.2.0
+      - jedi==0.19.1
+      - jinja2==3.1.4
       - keras==3.3.3
+      - kiwisolver==1.4.5
+      - libclang==18.1.1
+      - llvmlite==0.42.0
+      - markdown==3.6
+      - markdown-it-py==3.0.0
+      - markupsafe==2.1.5
       - matplotlib==3.9.0
-      - numpy==1.26.4
+      - matplotlib-inline==0.1.7
+      - mdurl==0.1.2
+      - ml-dtypes==0.3.2
+      - namex==0.0.8
+      - nest-asyncio==1.6.0
+      - opt-einsum==3.3.0
+      - optree==0.11.0
+      - packaging==24.1
       - pandas==2.2.2
+      - parso==0.8.4
+      - pexpect==4.9.0
+      - pillow==10.3.0
       - plotly==5.22.0
-      - scikit-learn==1.5.0
-      - scipy==1.13.1
+      - prompt-toolkit==3.0.47
+      - protobuf==4.25.3
+      - ptyprocess==0.7.0
+      - pure-eval==0.2.2
+      - pygments==2.18.0
+      - pynndescent==0.5.12
+      - pyparsing==3.1.2
+      - python-dateutil==2.9.0.post0
+      - pytz==2024.1
+      - requests==2.32.3
+      - retrying==1.3.4
+      - rich==13.7.1
+      - six==1.16.0
+      - stack-data==0.6.3
+      - tenacity==8.3.0
+      - tensorboard==2.16.2
+      - tensorboard-data-server==0.7.2
       - tensorflow==2.16.1
+      - tensorflow-io-gcs-filesystem==0.37.0
+      - termcolor==2.4.0
+      - tomli==2.0.1
+      - tqdm==4.66.4
+      - traitlets==5.14.3
       - trimap==1.1.4
-      - pacmap==0.7.3
+      - typing-extensions==4.12.2
+      - tzdata==2024.1
       - umap-learn==0.5.6
+      - urllib3==2.2.1
+      - wcwidth==0.2.13
+      - werkzeug==3.0.3
+      - wrapt==1.16.0
+      - zipp==3.19.2
+prefix: /home/lui/anaconda3/envs/mma2
