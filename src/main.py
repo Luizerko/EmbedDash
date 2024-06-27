@@ -1,22 +1,14 @@
 import pandas as pd
 import os
 
-import plotly.express as px
-from plotly import graph_objects as go
-
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-
 from pathlib import Path
-from scipy.optimize import minimize
 from dash import Dash, html, dcc, Input, Output, State, callback, no_update
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
-from layouts import fig_layout_dict, small_fig_layout_dict, fig_layout_dict_mammoth, fig_layout_dict_latent
 from models import generate_latent_data
 
-from utils import make_mnist_figure, make_mammoth_figure, make_latent_figure
+from utils import make_mnist_figure, make_mammoth_figure, make_latent_figure, get_button_name
 
 
 ####################### VARIABLES #######################
@@ -25,13 +17,12 @@ from utils import make_mnist_figure, make_mammoth_figure, make_latent_figure
 data_path = Path("data/")
 if not os.path.exists(data_path):
     os.makedirs(data_path)
-    print(f'Folder "{data_path}" created.')
-dataframe_mnist_path = data_path / "mnist_param_grid_sampled_15k_data.pkl"
+dataframe_mnist_path = data_path / "final_mnist_param_grid_data.pkl"
 dataframe_mammoth_path = data_path / "mammoth_param_grid_data.pkl"
 latent_data_path = data_path / "latent_data.pkl"
 
 external_stylesheets = [dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP]
-app = Dash(__name__, external_stylesheets=external_stylesheets)
+app = Dash(__name__, external_stylesheets=external_stylesheets, title="Model explorations", update_title=None)
 
 
 ####################### DATA PREPROCESSING #######################
@@ -105,24 +96,27 @@ pacmap_latent = make_latent_figure(df_latent, 'pacmap')
 
 multiplicative_values = [2**i for i in range(1, 4)]
 marks = {i: str(value) for i, value in enumerate(multiplicative_values)}
+
 information_mnist = """
-This button shifts the centroids of clusters on the embedding space so that they respect the actual distances of the centroids on the latent space.
+This button shifts the centroids of clusters on the embedding space so that they respect the euclidian distances of the centroids on the latent space. A second click reverses this operation.
 """
 information_latent = """
-In order to create a more realistic setup, we projected the CIFAR dataset onto a high-dimensional latent space before computing the embeddings. For that, we get the outputs of the second to last layer of the EfficientNetV2L, a classification neural network trained on CIFAR.
+By using the outputs from the second-to-last layer of EfficientNetV2L, a classification neural network trained on the CIFAR dataset, projecting the data onto a high-dimensional latent space before computing the embeddings to simulate a more realistic setup.
 """
 
 app.layout = html.Div([
+    dcc.Store(id='on-refresh'),
     dcc.Tabs([
 
         ### MNIST Data
         dcc.Tab(label='MNIST Data', children=[
             html.Div([
-                html.Label('Visualization of Embeddings on MNIST Data', id='title_mnist', style={'margin-top': '10px', 'margin-bottom': '10px', 'font-size': '50px', 'font-weight': 'bold', 'width': '100%', 'display': 'flex', 'justify-content': 'center'}),
+                html.Label('Asses Quality of Embeddings', id='title_mnist', style={'margin-top': '10px', 'margin-bottom': '10px', 'font-size': '50px', 'font-weight': 'bold', 'width': '100%', 'display': 'flex', 'justify-content': 'center'}),
                 html.Div([
                     ### Upper row
                     html.Div([
-                        dcc.Store(id='version_parameters', storage_type='local', data=['trimap_nin_12_nout_4', 'umap_nneighbors_15_mindist_0.1', 'tsne_perp_30_exa_12', 'pacmap_nneighbors_10_init_pca']),
+                        dcc.Store(id='version_parameters', storage_type='memory', data=['trimap_nin_12_nout_4', 'umap_nneighbors_15_mindist_0.1', 'tsne_perp_30_exa_12', 'pacmap_nneighbors_10_init_pca']),
+                        dcc.Store(id='versions_on_latent', storage_type='memory', data=[False, False, False, False]),
                         dcc.Graph(
                             id='mnist_main_plot', 
                             figure=trimap_mnist,
@@ -209,7 +203,7 @@ app.layout = html.Div([
                         html.H3("Click Sample", style={'text-align': 'center', 'font-family': 'Arial', 'font-weight': 'bold', 'margin-top': '5px', 'margin-bottom': '5px'}),
                         
                         html.Div([
-                            dcc.Store(id='clicked-index-mnist', storage_type='local', data=None),
+                            dcc.Store(id='clicked-index-mnist', storage_type='memory', data=None),
                             html.Img(id='click-image-mnist', style={'height': '200px'}),
                             html.Div(id='click-index-mnist', style={'font-family': 'Arial', 'padding': '10px'})
                         ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})
@@ -223,11 +217,11 @@ app.layout = html.Div([
         ### Mammoth Data
         dcc.Tab(label='Mammoth Data', children=[
             html.Div([
-                html.Label('Visualization of Embeddings on Mammoth Data', id='title_mammoth', style={'margin-top': '10px', 'margin-bottom': '10px', 'font-size': '50px', 'font-weight': 'bold', 'width': '100%', 'display': 'flex', 'justify-content': 'center'}),
+                html.Label('Global Structure Preservation', id='title_mammoth', style={'margin-top': '10px', 'margin-bottom': '10px', 'font-size': '50px', 'font-weight': 'bold', 'width': '100%', 'display': 'flex', 'justify-content': 'center'}),
                 html.Div([
                     #Left grid
                     html.Div([
-                        dcc.Store(id='clicked-index-mammoth', storage_type='local', data=None),
+                        dcc.Store(id='clicked-index-mammoth', storage_type='memory', data=None),
                         html.Div([
                             dcc.Graph(
                                 id='mammoth_trimap_plot',
@@ -278,7 +272,7 @@ app.layout = html.Div([
         dcc.Tab(label='CIFAR Data', children=[
             html.Div([
                 html.Div([
-                    html.Label('Visualization of Embeddings on CIFAR Data', id='title_latent', style={'font-size': '50px', 'font-weight': 'bold'}),
+                    html.Label('Embeddings of Latents from a NN', id='title_latent', style={'font-size': '50px', 'font-weight': 'bold'}),
                     dbc.Button(
                         html.I(className="bi bi-info-circle-fill me-2"),
                         id="info_button_latent", 
@@ -339,7 +333,7 @@ app.layout = html.Div([
 
                     # Box for images
                     html.Div([
-                        dcc.Store(id='clicked-index-latent', storage_type='local', data=None),
+                        dcc.Store(id='clicked-index-latent', storage_type='memory', data=None),
                         html.H3("Hover Sample", style={'text-align': 'center', 'font-weight': 'bold', 'font-family': 'Arial', 'margin-top': '5px', 'margin-bottom': '5px'}),
                         
                         html.Div([
@@ -364,100 +358,81 @@ app.layout = html.Div([
 
 ####################### CALLBACKS #######################
 
+# reload MNIST on page refresh
+# necessary because the latent space distances function changes df_mnist directly and on page refresh this creates bugs
+# we decided to do it that way so we didn't have to compute the updates for each point individually
+@app.callback(
+    Output('on-refresh', 'id'), 
+    [Input('on-refresh', 'id')])
+def reload_mnist(id):
+    global df_mnist
+    if dataframe_mnist_path.exists():
+        # Load the DataFrame from the file
+        df_mnist = pd.read_pickle(dataframe_mnist_path)
+        df_mnist['label'] = df_mnist['label'].astype('category')
+        df_mnist['label'] = df_mnist['label'].cat.set_categories(sorted(df_mnist['label'].unique()))
+    raise PreventUpdate
+
+
 # Callback for the latent space distances function
 @app.callback(
     [Output('mnist_main_plot', 'figure', allow_duplicate=True),
-     Output('translate-button', 'n_clicks')],
+     Output('translate-button', 'n_clicks'),
+     Output('translate-button', 'children'),
+     Output('versions_on_latent', 'data')],
     [Input('translate-button', 'n_clicks')],
-    [State('mnist_main_plot', 'figure'),
-     State('mnist_dd_choose_embedding', 'value')],
+    [State('mnist_dd_choose_embedding', 'value'),
+     State('version_parameters', 'data'),
+     State('clicked-index-mnist', 'data'),
+     State('versions_on_latent', 'data')],
      prevent_initial_call=True
 )
-def update_plot(n_clicks, current_figure, dropdown_value):
+def update_plot(n_clicks, dropdown_value, version_states, clicked_index, versions_on_latent):
 
-    # instead of this n_clicks%2 stuff, you can return n_clicks, allowing you to reset it to 0
-    # tip from Joost
+    # stop from triggering when button is created
+    if n_clicks == 0:
+        raise PreventUpdate
+
+    # get the versions to update
     if dropdown_value == 'trimap':
-        if n_clicks > 0:
-
-            if n_clicks%2 != 0:
-                df_mnist['x_trimap_nin_12_nout_4'] = df_mnist['x_trimap_nin_12_nout_4'] + df_mnist['x_trimap_shift']
-                df_mnist['y_trimap_nin_12_nout_4'] = df_mnist['y_trimap_nin_12_nout_4'] + df_mnist['y_trimap_shift']
-            else:
-                df_mnist['x_trimap_nin_12_nout_4'] = df_mnist['x_trimap_nin_12_nout_4'] - df_mnist['x_trimap_shift']
-                df_mnist['y_trimap_nin_12_nout_4'] = df_mnist['y_trimap_nin_12_nout_4'] - df_mnist['y_trimap_shift']
-
-            updated_fig = px.scatter(
-                df_mnist, x='x_trimap_nin_12_nout_4', y='y_trimap_nin_12_nout_4', color='label',
-                title="TRIMAP ",
-                labels={'color': 'Digit', 'label': 'Label'},
-                hover_data={'label': False, 'x_trimap_nin_12_nout_4': False, 'y_trimap_nin_12_nout_4': False, 'image': False, 'index': False},
-                width=800, height=640, size_max=10
-            )
-            updated_fig.update_layout(fig_layout_dict)
-            return updated_fig, n_clicks
-
+        type_index = 0 # type_index to not have to re-use if-else the entire time
+        versions = ['trimap_nin_12_nout_4', 'trimap_nin_8_nout_4', 'trimap_nin_16_nout_4',
+        'trimap_nin_12_nout_2', 'trimap_nin_8_nout_2', 'trimap_nin_16_nout_2',
+        'trimap_nin_12_nout_8', 'trimap_nin_8_nout_8', 'trimap_nin_16_nout_8']
     elif dropdown_value == 'umap':
-        if n_clicks > 0:
-
-            if n_clicks%2 != 0:
-                df_mnist['x_umap_nneighbors_15_mindist_0.1'] = df_mnist['x_umap_nneighbors_15_mindist_0.1'] + df_mnist['x_umap_shift']
-                df_mnist['y_umap_nneighbors_15_mindist_0.1'] = df_mnist['y_umap_nneighbors_15_mindist_0.1'] + df_mnist['y_umap_shift']
-            else:
-                df_mnist['x_umap_nneighbors_15_mindist_0.1'] = df_mnist['x_umap_nneighbors_15_mindist_0.1'] - df_mnist['x_umap_shift']
-                df_mnist['y_umap_nneighbors_15_mindist_0.1'] = df_mnist['y_umap_nneighbors_15_mindist_0.1'] - df_mnist['y_umap_shift']
-
-            updated_fig = px.scatter(
-                df_mnist, x='x_umap_nneighbors_15_mindist_0.1', y='y_umap_nneighbors_15_mindist_0.1', color='label',
-                title="UMAP ",
-                labels={'color': 'Digit', 'label': 'Label'},
-                hover_data={'label': False, 'x_umap_nneighbors_15_mindist_0.1': False, 'y_umap_nneighbors_15_mindist_0.1': False, 'image': False, 'index': False},
-                width=800, height=640, size_max=10
-            )
-            updated_fig.update_layout(fig_layout_dict)
-            return updated_fig, n_clicks
-
+        type_index = 1
+        versions = ['umap_nneighbors_5_mindist_0.1', 'umap_nneighbors_15_mindist_0.1', 'umap_nneighbors_45_mindist_0.1', 
+        'umap_nneighbors_5_mindist_0.0', 'umap_nneighbors_15_mindist_0.0', 'umap_nneighbors_45_mindist_0.0',
+        'umap_nneighbors_5_mindist_0.5', 'umap_nneighbors_15_mindist_0.5', 'umap_nneighbors_45_mindist_0.5']
     elif dropdown_value == 'tsne':
-        if n_clicks > 0:
-
-            if n_clicks%2 != 0:
-                df_mnist['x_tsne_perp_30_exa_12'] = df_mnist['x_tsne_perp_30_exa_12'] + df_mnist['x_tsne_shift']
-                df_mnist['y_tsne_perp_30_exa_12'] = df_mnist['y_tsne_perp_30_exa_12'] + df_mnist['y_tsne_shift']
-            else:
-                df_mnist['x_tsne_perp_30_exa_12'] = df_mnist['x_tsne_perp_30_exa_12'] - df_mnist['x_tsne_shift']
-                df_mnist['y_tsne_perp_30_exa_12'] = df_mnist['y_tsne_perp_30_exa_12'] - df_mnist['y_tsne_shift']
-
-            updated_fig = px.scatter(
-                df_mnist, x='x_tsne_perp_30_exa_12', y='y_tsne_perp_30_exa_12', color='label',
-                title="T-SNE",
-                labels={'color': 'Digit', 'label': 'Label'},
-                hover_data={'label': False, 'x_tsne_perp_30_exa_12': False, 'y_tsne_perp_30_exa_12': False, 'image': False, 'index': False},
-                width=800, height=640, size_max=10
-            )
-            updated_fig.update_layout(fig_layout_dict)
-            return updated_fig, n_clicks
-        
+        type_index = 2
+        versions = ['tsne_perp_30_exa_12', 'tsne_perp_15_exa_12', 'tsne_perp_45_exa_12', 
+        'tsne_perp_30_exa_6', 'tsne_perp_15_exa_6', 'tsne_perp_45_exa_6', 
+        'tsne_perp_30_exa_24', 'tsne_perp_15_exa_24', 'tsne_perp_45_exa_24', ]
     elif dropdown_value == 'pacmap':
-        if n_clicks > 0:
+        type_index = 3
+        versions = ['pacmap_nneighbors_10_init_pca', 'pacmap_nneighbors_5_init_pca',  'pacmap_nneighbors_20_init_pca', 
+        'pacmap_nneighbors_10_init_random', 'pacmap_nneighbors_5_init_random',  'pacmap_nneighbors_20_init_random']
 
-            if n_clicks%2 != 0:
-                df_mnist['x_pacmap_nneighbors_10_init_pca'] = df_mnist['x_pacmap_nneighbors_10_init_pca'] + df_mnist['x_pacmap_shift']
-                df_mnist['y_pacmap_nneighbors_10_init_pca'] = df_mnist['y_pacmap_nneighbors_10_init_pca'] + df_mnist['y_pacmap_shift']
-            else:
-                df_mnist['x_pacmap_nneighbors_10_init_pca'] = df_mnist['x_pacmap_nneighbors_10_init_pca'] - df_mnist['x_pacmap_shift']
-                df_mnist['y_pacmap_nneighbors_10_init_pca'] = df_mnist['y_pacmap_nneighbors_10_init_pca'] - df_mnist['y_pacmap_shift']
+    # if it is on latent, return to embedding
+    if versions_on_latent[type_index]:
+        versions_on_latent[type_index] = False
+        button_title = get_button_name(False)
+        for version in versions:
+            df_mnist['x_'+version] = df_mnist['x_'+version] - df_mnist['x_shift_'+version]
+            df_mnist['y_'+version] = df_mnist['y_'+version] - df_mnist['y_shift_'+version]
+    # if it is on embedding, set to latent
+    else:
+        versions_on_latent[type_index] = True
+        button_title = get_button_name(True)
+        for version in versions:
+            df_mnist['x_'+version] = df_mnist['x_'+version] + df_mnist['x_shift_'+version]
+            df_mnist['y_'+version] = df_mnist['y_'+version] + df_mnist['y_shift_'+version]
 
-            updated_fig = px.scatter(
-                df_mnist, x='x_pacmap_nneighbors_10_init_pca', y='y_pacmap_nneighbors_10_init_pca', color='label',
-                title="PACMAP",
-                labels={'color': 'Digit', 'label': 'Label'},
-                hover_data={'label': False, 'x_pacmap_nneighbors_10_init_pca': False, 'y_pacmap_nneighbors_10_init_pca': False, 'image': False, 'index': False},
-                width=800, height=640, size_max=10
-            )
-            updated_fig.update_layout(fig_layout_dict)
-            return updated_fig, n_clicks
-    
-    return current_figure, n_clicks
+    version = version_states[type_index]
+    updated_fig = make_mnist_figure(df_mnist, version, index=clicked_index, is_subplot=False)
+
+    return updated_fig, n_clicks, button_title, versions_on_latent
 
 
 @app.callback(
@@ -497,10 +472,6 @@ def sliders(slider_value_1, slider_value_2, version_parameters, clicked_index):
         updated_fig = make_mnist_figure(df_mnist, version, index=clicked_index)
 
     return updated_fig, version_parameters
-
-#     updated_fig.update_layout(fig_layout_dict)
-
-#     return updated_fig
 
 
 @callback(
@@ -699,105 +670,104 @@ def display_click_image_latent(trimapClickData, umapClickData, tsneClickData, pa
     tsne_img = make_latent_figure(df_latent, 'tsne', index=original_index)
     pacmap_img = make_latent_figure(df_latent, 'pacmap', index=original_index)
 
-    return original_image, f'Label: {original_label, original_index}', original_index, trimap_img, umap_img, tsne_img, pacmap_img, None, None, None, None
+    return original_image, f'Label: {original_label}', original_index, trimap_img, umap_img, tsne_img, pacmap_img, None, None, None, None
 
-@callback(
-    [Output('clicked-index-mammoth', 'data'),
-     Output('mammoth_original_plot', 'figure', allow_duplicate=True),
-     Output('mammoth_trimap_plot', 'figure', allow_duplicate=True),
-     Output('mammoth_umap_plot', 'figure', allow_duplicate=True),
-     Output('mammoth_tsne_plot', 'figure', allow_duplicate=True),
-     Output('mammoth_pacmap_plot', 'figure', allow_duplicate=True),
-     Output('mammoth_original_plot', 'clickData'),
-     Output('mammoth_trimap_plot', 'clickData'),
-     Output('mammoth_umap_plot', 'clickData'),
-     Output('mammoth_tsne_plot', 'clickData'),
-     Output('mammoth_pacmap_plot', 'clickData'),],
-    [Input('mammoth_original_plot', 'clickData'),
-     Input('mammoth_trimap_plot', 'clickData'),
-     Input('mammoth_umap_plot', 'clickData'),
-     Input('mammoth_tsne_plot', 'clickData'),
-     Input('mammoth_pacmap_plot', 'clickData')],
-    [State('mammoth_original_plot', 'figure'),
-     State('mammoth_trimap_plot', 'figure'),
-     State('mammoth_umap_plot', 'figure'),
-     State('mammoth_tsne_plot', 'figure'),
-     State('mammoth_pacmap_plot', 'figure')],
-    prevent_initial_call=True
-)
-def display_click_mammoth(originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData,
-                          originalfig, trimapfig, umapfig, tsnefig, pacmapfig):
-    clickData = None
-    inputs = [originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData]
+# @callback(
+#     [Output('clicked-index-mammoth', 'data'),
+#      Output('mammoth_original_plot', 'figure', allow_duplicate=True),
+#      Output('mammoth_trimap_plot', 'figure', allow_duplicate=True),
+#      Output('mammoth_umap_plot', 'figure', allow_duplicate=True),
+#      Output('mammoth_tsne_plot', 'figure', allow_duplicate=True),
+#      Output('mammoth_pacmap_plot', 'figure', allow_duplicate=True),
+#      Output('mammoth_original_plot', 'clickData'),
+#      Output('mammoth_trimap_plot', 'clickData'),
+#      Output('mammoth_umap_plot', 'clickData'),
+#      Output('mammoth_tsne_plot', 'clickData'),
+#      Output('mammoth_pacmap_plot', 'clickData'),],
+#     [Input('mammoth_original_plot', 'clickData'),
+#      Input('mammoth_trimap_plot', 'clickData'),
+#      Input('mammoth_umap_plot', 'clickData'),
+#      Input('mammoth_tsne_plot', 'clickData'),
+#      Input('mammoth_pacmap_plot', 'clickData')],
+#     [State('mammoth_original_plot', 'figure'),
+#      State('mammoth_trimap_plot', 'figure'),
+#      State('mammoth_umap_plot', 'figure'),
+#      State('mammoth_tsne_plot', 'figure'),
+#      State('mammoth_pacmap_plot', 'figure')],
+#     prevent_initial_call=True
+# )
+# def display_click_mammoth(originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData,
+#                           originalfig, trimapfig, umapfig, tsnefig, pacmapfig):
+#     clickData = None
+#     inputs = [originalClickData, trimapClickData, umapClickData, tsneClickData, pacmapClickData]
     
-    for inp in inputs:
-        if inp is not None:
-            clickData = inp
-            break
+#     for inp in inputs:
+#         if inp is not None:
+#             clickData = inp
+#             break
 
-    if clickData is None:
-        raise PreventUpdate
+#     if clickData is None:
+#         raise PreventUpdate
 
-    original_index = clickData['points'][0]['customdata'][0]
-    print(original_index)
-    data_row = df_mammoth.loc[original_index]
+#     original_index = clickData['points'][0]['customdata'][0]
+#     data_row = df_mammoth.loc[original_index]
 
-    originalfig['data'] = [
-            originalfig['data'][0], go.Scatter3d(
-                x=[data_row['x']], 
-                y=[data_row['y']], 
-                z=[data_row['z']], 
-                mode='markers',
-                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-                showlegend=False
-            ).to_plotly_json()
-    ]
+#     originalfig['data'] = [
+#             originalfig['data'][0], go.Scatter3d(
+#                 x=[data_row['x']], 
+#                 y=[data_row['y']], 
+#                 z=[data_row['z']], 
+#                 mode='markers',
+#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+#                 showlegend=False
+#             ).to_plotly_json()
+#     ]
 
-    # original_img = make_mammoth_figure(df_mammoth, 'original', index=original_index)
-    trimapfig['data'] = [
-            trimapfig['data'][0], go.Scatter3d(
-                x=[data_row['x_trimap_nin_12_nout_4']], 
-                y=[data_row['y_trimap_nin_12_nout_4']], 
-                z=[data_row['z_trimap_nin_12_nout_4']], 
-                mode='markers',
-                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-                showlegend=False
-            ).to_plotly_json()
-    ]
-    umapfig['data'] = [
-            umapfig['data'][0], go.Scatter3d(
-                x=[data_row['x_umap_nneighbors_15_mindist_0.1']], 
-                y=[data_row['y_umap_nneighbors_15_mindist_0.1']], 
-                z=[data_row['z_umap_nneighbors_15_mindist_0.1']], 
-                mode='markers',
-                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-                showlegend=False
-            ).to_plotly_json()
-    ]
+#     # original_img = make_mammoth_figure(df_mammoth, 'original', index=original_index)
+#     trimapfig['data'] = [
+#             trimapfig['data'][0], go.Scatter3d(
+#                 x=[data_row['x_trimap_nin_12_nout_4']], 
+#                 y=[data_row['y_trimap_nin_12_nout_4']], 
+#                 z=[data_row['z_trimap_nin_12_nout_4']], 
+#                 mode='markers',
+#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+#                 showlegend=False
+#             ).to_plotly_json()
+#     ]
+#     umapfig['data'] = [
+#             umapfig['data'][0], go.Scatter3d(
+#                 x=[data_row['x_umap_nneighbors_15_mindist_0.1']], 
+#                 y=[data_row['y_umap_nneighbors_15_mindist_0.1']], 
+#                 z=[data_row['z_umap_nneighbors_15_mindist_0.1']], 
+#                 mode='markers',
+#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+#                 showlegend=False
+#             ).to_plotly_json()
+#     ]
     
-    tsnefig['data'] = [
-            tsnefig['data'][0], go.Scatter3d(
-                x=[data_row['x_tsne_perp_30_exa_12']], 
-                y=[data_row['y_tsne_perp_30_exa_12']], 
-                z=[data_row['z_tsne_perp_30_exa_12']], 
-                mode='markers',
-                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-                showlegend=False
-            ).to_plotly_json()
-    ]
+#     tsnefig['data'] = [
+#             tsnefig['data'][0], go.Scatter3d(
+#                 x=[data_row['x_tsne_perp_30_exa_12']], 
+#                 y=[data_row['y_tsne_perp_30_exa_12']], 
+#                 z=[data_row['z_tsne_perp_30_exa_12']], 
+#                 mode='markers',
+#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+#                 showlegend=False
+#             ).to_plotly_json()
+#     ]
 
-    pacmapfig['data'] = [
-            pacmapfig['data'][0], go.Scatter3d(
-                x=[data_row['x_pacmap_nneighbors_10_init_pca']], 
-                y=[data_row['y_pacmap_nneighbors_10_init_pca']], 
-                z=[data_row['z_pacmap_nneighbors_10_init_pca']], 
-                mode='markers',
-                marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
-                showlegend=False
-            ).to_plotly_json()
-    ]
+#     pacmapfig['data'] = [
+#             pacmapfig['data'][0], go.Scatter3d(
+#                 x=[data_row['x_pacmap_nneighbors_10_init_pca']], 
+#                 y=[data_row['y_pacmap_nneighbors_10_init_pca']], 
+#                 z=[data_row['z_pacmap_nneighbors_10_init_pca']], 
+#                 mode='markers',
+#                 marker=dict(symbol='diamond-open', size=10, opacity=1.0, color='black', line=go.scatter3d.marker.Line(width=5, color='black')),
+#                 showlegend=False
+#             ).to_plotly_json()
+#     ]
     
-    return original_index, originalfig, trimapfig, umapfig, tsnefig, pacmapfig, None, None, None, None, None
+#     return original_index, originalfig, trimapfig, umapfig, tsnefig, pacmapfig, None, None, None, None, None
     
 
 @app.callback(
@@ -809,9 +779,10 @@ def display_click_mammoth(originalClickData, trimapClickData, umapClickData, tsn
      Output('sliders_div', 'children')],
     [Input('mnist_dd_choose_embedding', 'value')],
     [State('version_parameters', 'data'),
-     State('clicked-index-mnist', 'data')]
+     State('clicked-index-mnist', 'data'),
+     State('versions_on_latent', 'data')]
 )
-def switch_main_img(dropdown_value, version_parameters, clicked_index):
+def switch_main_img(dropdown_value, version_parameters, clicked_index, version_on_latent):
     if dropdown_value == mnist_plot_dictionary['main']:
         raise PreventUpdate
 
@@ -842,7 +813,7 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             ),
 
             html.Div([
-                html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                html.Button(get_button_name(version_on_latent[0]), id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
                 dbc.Button(
                     html.I(className="bi bi-info-circle-fill me-2"),
                     id="info_button_mnist", 
@@ -928,7 +899,7 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             id='mnist_slider_2',
             ),
             html.Div([
-                html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                html.Button(get_button_name(version_on_latent[1]), id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
                 dbc.Button(
                     html.I(className="bi bi-info-circle-fill me-2"),
                     id="info_button_mnist", 
@@ -1012,7 +983,7 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             id='mnist_slider_2',
             ),
             html.Div([
-                html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                html.Button(get_button_name(version_on_latent[2]), id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
                 dbc.Button(
                     html.I(className="bi bi-info-circle-fill me-2"),
                     id="info_button_mnist", 
@@ -1100,7 +1071,7 @@ def switch_main_img(dropdown_value, version_parameters, clicked_index):
             ),
 
             html.Div([
-                html.Button('See Data Distribution on Latent Space', id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
+                html.Button(get_button_name(version_on_latent[3]), id='translate-button', n_clicks=0, style={'background-color': '#008CBA', 'border': 'none', 'color': 'white', 'padding': '15px 32px', 'text-align': 'center', 'text-decoration': 'none', 'display': 'inline-block', 'font-size': '20px', 'margin': '4px 2px', 'border-radius': '12px', 'transition': 'background-color 0.3s ease'}),
                 dbc.Button(
                     html.I(className="bi bi-info-circle-fill me-2"),
                     id="info_button_mnist", 
